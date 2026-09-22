@@ -156,12 +156,19 @@ body {
 }
 #fab:active { transform: scale(0.94); }
 
-.search-bar input, .settings-view input, .details-panel input, .modal-sheet input, textarea {
+.search-bar input, .settings-view input, .details-panel input,
+.modal-sheet input:not([type="checkbox"]), textarea {
   width: 100%; padding: 11px 14px; border-radius: var(--radius);
   border: 1px solid var(--border); background: var(--surface); color: var(--text);
   font-size: 15px; margin-bottom: 10px; font-family: inherit;
 }
 textarea { resize: vertical; }
+
+.ocr-lang-toggle {
+  display: inline-flex; align-items: center; gap: 6px; font-size: 13px;
+  color: var(--text-dim); white-space: nowrap; cursor: pointer;
+}
+.ocr-lang-toggle input { width: auto; margin: 0; }
 
 .chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 6px 0 14px; }
 .chip {

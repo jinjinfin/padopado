@@ -112,6 +112,10 @@ async function pushRemote() {
   }
 }
 
+// entries.js와 같은 이유로: 온라인 복귀 시 내 변경사항을 올린 뒤, 다른 기기가
+// 그 사이 만든 컬렉션 항목도 받아옵니다.
 window.addEventListener('online', () => {
-  pushRemote().catch(() => {});
+  pushRemote()
+    .then(() => refreshFromRemote())
+    .catch(() => {});
 });

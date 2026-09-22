@@ -72,11 +72,35 @@ function renderShell() {
   updateOfflineBadge();
   window.addEventListener('online', updateOfflineBadge);
   window.addEventListener('offline', updateOfflineBadge);
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') autoRefreshFromRemote();
+  });
+  window.addEventListener('focus', autoRefreshFromRemote);
 }
 
 function updateOfflineBadge() {
   const badge = document.getElementById('offline-badge');
   if (badge) badge.style.display = navigator.onLine ? 'none' : 'inline-block';
+}
+
+// 다른 기기(예: 모바일)에서 쓴 글을 이 화면에서도 보이게 하려면, 이 앱을 다시
+// 볼 때마다("다른 탭/앱에 갔다가 돌아옴") GitHub에서 최신 내용을 받아와야 합니다.
+// 그렇지 않으면 앱을 처음 켰을 때 딱 한 번만 받아오고, 그 뒤로는 "설정 > 지금
+// 동기화"를 직접 누르기 전까지 다른 기기에서 쓴 글이 계속 안 보이게 됩니다.
+let lastAutoRefresh = 0;
+const AUTO_REFRESH_MIN_INTERVAL_MS = 15000; // 너무 자주(탭을 빠르게 왔다갔다) 반복 호출하지 않도록
+
+async function autoRefreshFromRemote() {
+  if (!isConfigured() || !navigator.onLine) return;
+  const now = Date.now();
+  if (now - lastAutoRefresh < AUTO_REFRESH_MIN_INTERVAL_MS) return;
+  lastAutoRefresh = now;
+  try {
+    await Promise.all([entries.refreshFromRemote(), collections.refreshFromRemote()]);
+  } catch (e) {
+    console.warn('화면 복귀 시 원격 동기화 실패(오프라인일 수 있음):', e.message);
+  }
 }
 
 async function boot() {

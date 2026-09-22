@@ -167,6 +167,12 @@ export function pendingCount() {
   return memoryEntries.filter((e) => e.syncStatus === 'pending').length;
 }
 
+// 온라인 복귀 시: 내가 쓴 대기중인 기록을 먼저 올리고(push), 그 다음 다른
+// 기기(예: 모바일)가 그 사이 올려둔 기록도 받아옵니다(pull). pull이 없으면
+// 다른 기기에서 쓴 글이 "설정 > 지금 동기화"를 직접 누르기 전까지 이 기기
+// 화면에 영영 나타나지 않습니다.
 window.addEventListener('online', () => {
-  syncPending().catch(() => {});
+  syncPending()
+    .then(() => refreshFromRemote())
+    .catch(() => {});
 });

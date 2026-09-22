@@ -123,6 +123,7 @@ function renderModal({ presetType, presetRetroPeriod, retroMode, referenceEntrie
       <div class="capture-actions-row">
         <label class="btn secondary" for="capture-photo">📷 사진으로 기록</label>
         <input type="file" id="capture-photo" accept="image/*" capture="environment" hidden />
+        <label class="ocr-lang-toggle"><input type="checkbox" id="ocr-include-eng" /> 영어도 섞여 있어요</label>
       </div>
 
       <button type="button" class="btn primary" id="capture-save">${isEdit ? '수정 완료' : '저장하기'}</button>
@@ -180,9 +181,10 @@ function wireModal({ presetType, presetRetroPeriod, retroMode, prefillContent, e
     status.style.display = 'block';
     status.textContent = '사진에서 글자를 인식하는 중... (처음 한 번은 시간이 조금 걸려요)';
     try {
+      const lang = $('#ocr-include-eng').checked ? 'kor+eng' : 'kor';
       const text = await recognizeText(file, (pct) => {
         status.textContent = `인식 중... ${pct}%`;
-      });
+      }, lang);
       const ta = $('#capture-content');
       ta.value = ta.value ? `${ta.value}\n${text}` : text;
       status.textContent = '인식 완료! 필요하면 내용을 고쳐주세요.';
