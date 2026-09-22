@@ -2,7 +2,7 @@
 // IndexedDB, canWrite() 같은 "이 기기의 로컬 상태"를 전혀 쓰지 않습니다.
 // 미리 공개 저장소에 올려둔 스냅샷 JSON을 fetch로 그냥 읽어와 보여줄
 // 뿐이라, 방문자가 어떤 기기·브라우저로 열든 항상 읽기 전용으로만 보입니다.
-import { escapeHtml, formatDate } from './shared.js';
+import { escapeHtml, formatDate, contentBlockHtml, wireContentToggle, applyContentClamp } from './shared.js';
 import { ENTRY_TYPES } from '../config.js';
 
 const TYPE_MAP = new Map(ENTRY_TYPES.map((t) => [t.id, t]));
@@ -29,7 +29,7 @@ function readOnlyEntryCard(entry, collectionsById) {
         </span>
       </div>
       ${sourceLine ? `<div class="entry-source">${escapeHtml(sourceLine)}</div>` : ''}
-      <p class="entry-content">${escapeHtml(entry.content).replace(/\n/g, '<br/>')}</p>
+      ${contentBlockHtml(entry.content)}
       ${linkLine}
       ${tags ? `<div class="entry-tags">${tags}</div>` : ''}
     </article>
@@ -63,6 +63,8 @@ export async function renderViewer(root, slug) {
     }
     bodyEl.className = 'entry-list';
     bodyEl.innerHTML = list.map((e) => readOnlyEntryCard(e, collectionsById)).join('');
+    wireContentToggle(bodyEl);
+    applyContentClamp(bodyEl);
   } catch (e) {
     bodyEl.className = 'empty-state';
     bodyEl.textContent = `불러오는 중 문제가 생겼어요: ${e.message}`;

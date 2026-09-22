@@ -1,35 +1,40 @@
-// 클라이언트 사이드 전문 검색. 한글은 토크나이저가 단어 단위로 잘 안 갈라지므로
-// 글자 바이그램(bigram)을 함께 색인해 짧은 한글 키워드도 검색되게 합니다.
+// 클라이언트 사이드 전문 검색.
+// 어절(띄어쓰기로 나뉜 단어) 단위가 아니라 글자 바이그램(연속된 두 글자) 기준으로
+// 인덱싱합니다. 그래야 "제주 여행"에서 "주여"처럼 어절 경계를 넘나드는 짧은
+// 부분 문자열로 검색해도 찾을 수 있어요. 필드(본문/출처/저자/태그 등)는 서로
+// 다른 필드끼리 바이그램이 섞이지 않도록 각각 따로 처리합니다.
 import FlexSearch from './vendor/flexsearch.min.js';
 
 let index = null;
 let byId = new Map();
 
-const HANGUL_OR_CJK = /[ㄱ-ㆎ가-힣一-鿿]/;
-
-export function toSearchTokens(text) {
-  if (!text) return '';
-  const words = text
+// 하나의 필드 텍스트에서 공백·구두점을 지운 순수 글자 스트림을 만들고, 그
+// 전체 문자열과 모든 2글자 바이그램을 토큰으로 냅니다.
+function fieldToTokens(text) {
+  if (!text) return [];
+  const stripped = text
     .normalize('NFKC')
     .toLowerCase()
-    .split(/[^\p{L}\p{N}]+/u)
-    .filter(Boolean);
-  const tokens = new Set();
-  for (const w of words) {
-    tokens.add(w);
-    if (HANGUL_OR_CJK.test(w) && w.length > 1) {
-      for (let i = 0; i < w.length - 1; i += 1) {
-        tokens.add(w.slice(i, i + 2));
-      }
-    }
+    .replace(/[^\p{L}\p{N}]+/gu, '');
+  if (!stripped) return [];
+  const tokens = new Set([stripped]);
+  for (let i = 0; i < stripped.length - 1; i += 1) {
+    tokens.add(stripped.slice(i, i + 2));
   }
-  return Array.from(tokens).join(' ');
+  return Array.from(tokens);
+}
+
+export function toSearchTokens(text) {
+  return fieldToTokens(text).join(' ');
 }
 
 function composeSearchable(entry, collectionTitle) {
-  return [entry.content, entry.source, entry.author, collectionTitle, (entry.tags || []).join(' ')]
-    .filter(Boolean)
-    .join(' \n ');
+  const fields = [entry.content, entry.source, entry.author, collectionTitle, ...(entry.tags || [])];
+  const tokens = new Set();
+  for (const field of fields) {
+    for (const t of fieldToTokens(field)) tokens.add(t);
+  }
+  return Array.from(tokens).join(' ');
 }
 
 export function buildIndex(entries, collectionsById = new Map()) {
@@ -39,8 +44,7 @@ export function buildIndex(entries, collectionsById = new Map()) {
     const collectionTitle = entry.collectionId && collectionsById.get(entry.collectionId)
       ? collectionsById.get(entry.collectionId).title
       : '';
-    const composed = composeSearchable(entry, collectionTitle);
-    index.add(entry.id, toSearchTokens(composed));
+    index.add(entry.id, composeSearchable(entry, collectionTitle));
     byId.set(entry.id, entry);
   }
 }

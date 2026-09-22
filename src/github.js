@@ -109,6 +109,17 @@ export async function putJSONFile(path, updater, message, { maxRetries = 3, repo
       current = await getJSONFile(path, repoOverride);
       continue;
     }
+    if (res.status === 401 || res.status === 403) {
+      // 토큰은 유효하지만(혹은 아예 권한 자체가 없지만), 이 저장소에 "쓰기"
+      // 권한이 없는 경우 GitHub이 이렇게 응답합니다. 특히 "다른 사람에게
+      // 보여주기(공유 링크)" 기능처럼, 원래 쓰던 토큰을 다른 저장소에도
+      // 쓰려고 할 때 흔히 나는 오류라 구체적으로 안내합니다.
+      throw new GitHubError(
+        `${owner}/${repo} 저장소에 쓸 권한이 없어요 (${res.status}). GitHub 토큰 설정에서 이 저장소가 포함되어 있는지, Contents 권한이 "Read and write"로 되어 있는지 확인해주세요.`,
+        res.status,
+        await safeText(res)
+      );
+    }
     throw new GitHubError(`GitHub 저장 실패: ${path} (${res.status})`, res.status, await safeText(res));
   }
   throw new GitHubError(`GitHub 저장 충돌을 해결하지 못했습니다: ${path}`, 409);

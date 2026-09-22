@@ -5,7 +5,7 @@ import * as collections from '../collections.js';
 import * as search from '../search.js';
 import { ENTRY_TYPES } from '../config.js';
 import { openCapture } from './capture.js';
-import { entryCard, wireEntryDelete, wireEntryEdit } from './shared.js';
+import { entryCard, wireEntryDelete, wireEntryEdit, wireContentToggle, applyContentClamp } from './shared.js';
 
 const FEED_TYPES = ENTRY_TYPES.filter((t) => t.id !== 'retro');
 
@@ -68,6 +68,7 @@ export function render(container) {
     if (!entry) return;
     openCapture({ editEntry: entry });
   });
+  wireContentToggle(container.querySelector('#feed-list'));
 
   rebuildSearchIndex();
   rerenderList(container);
@@ -109,6 +110,7 @@ function rerenderList(container) {
   emptyEl.style.display = 'none';
   const collectionsById = new Map(collections.getItems().map((it) => [it.id, it]));
   listEl.innerHTML = list.map((e) => entryCard(e, collectionsById)).join('');
+  applyContentClamp(listEl);
 }
 
 export function openQuickCapture() {

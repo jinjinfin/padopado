@@ -1,7 +1,7 @@
 // 대시보드: 내적 동기부여를 위한 시각화 - 스트릭, 히트맵, 마일스톤, 키워드, 랜덤 회상.
 import * as entries from '../entries.js';
 import * as stats from '../stats.js';
-import { escapeHtml, formatDate } from './shared.js';
+import { escapeHtml, formatDate, contentBlockHtml, wireContentToggle, applyContentClamp } from './shared.js';
 
 let unsub = null;
 
@@ -63,15 +63,19 @@ function paint(container) {
     </div>
 
     <h2 class="section-title">다시 꺼내보는 기록 ✨</h2>
-    <div class="entry-list">
+    <div class="entry-list" id="dash-resurfaced">
       ${resurfaced.map((e) => `
         <article class="entry-card">
           <div class="entry-meta"><span class="entry-time">${formatDate(e.createdAt)}</span></div>
-          <p class="entry-content">${escapeHtml(e.content).replace(/\n/g, '<br/>')}</p>
+          ${contentBlockHtml(e.content)}
         </article>
       `).join('') || '<div class="empty-state">기록이 쌓이면 예전 기록을 다시 보여드릴게요.</div>'}
     </div>
   `;
+
+  const resurfacedEl = body.querySelector('#dash-resurfaced');
+  wireContentToggle(resurfacedEl);
+  applyContentClamp(resurfacedEl);
 }
 
 function renderHeatmap(days) {

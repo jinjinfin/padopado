@@ -3,7 +3,7 @@
 import * as collections from '../collections.js';
 import * as entries from '../entries.js';
 import { COLLECTION_KINDS, canWrite } from '../config.js';
-import { escapeHtml, formatDate, wireEntryDelete, wireEntryEdit } from './shared.js';
+import { escapeHtml, formatDate, wireEntryDelete, wireEntryEdit, contentBlockHtml, wireContentToggle, applyContentClamp } from './shared.js';
 import { openCapture } from './capture.js';
 
 let unsubCollections = null;
@@ -99,14 +99,14 @@ function renderDetail(container, itemId) {
       <div class="stat-pill">${itemEntries.length}개의 기록을 모았어요</div>
       <div class="entry-list">
         ${itemEntries.map((e) => `
-          <article class="entry-card">
+          <article class="entry-card" data-id="${e.id}">
             <div class="entry-meta">
               <span class="entry-meta-right">
                 <span class="entry-time">${formatDate(e.createdAt)}</span>
                 ${actionButtons(e.id)}
               </span>
             </div>
-            <p class="entry-content">${escapeHtml(e.content).replace(/\n/g, '<br/>')}</p>
+            ${contentBlockHtml(e.content)}
           </article>
         `).join('') || '<div class="empty-state">아직 이 항목에서 모은 기록이 없어요.</div>'}
       </div>
@@ -120,10 +120,13 @@ function renderDetail(container, itemId) {
       collections.updateItem(item.id, { finished: e.target.checked });
     });
   }
-  wireEntryDelete(container.querySelector('.entry-list'), entries);
-  wireEntryEdit(container.querySelector('.entry-list'), (id) => {
+  const entryListEl = container.querySelector('.entry-list');
+  wireEntryDelete(entryListEl, entries);
+  wireEntryEdit(entryListEl, (id) => {
     const entry = entries.getEntries().find((e) => e.id === id);
     if (!entry) return;
     openCapture({ editEntry: entry });
   });
+  wireContentToggle(entryListEl);
+  applyContentClamp(entryListEl);
 }

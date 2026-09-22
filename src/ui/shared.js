@@ -69,11 +69,49 @@ export function entryCard(entry, collectionsById = new Map()) {
         </span>
       </div>
       ${sourceLine ? `<div class="entry-source">${escapeHtml(sourceLine)}</div>` : ''}
-      <p class="entry-content">${escapeHtml(entry.content).replace(/\n/g, '<br/>')}</p>
+      ${contentBlockHtml(entry.content)}
       ${linkLine}
       ${tags ? `<div class="entry-tags">${tags}</div>` : ''}
     </article>
   `;
+}
+
+// 긴 글은 5줄까지만 보이고, 나머지는 "더 보기" 토글로 펼쳐볼 수 있게 합니다.
+// 실제로 5줄을 넘는지는 렌더링된 폭에 따라 달라지므로(글자 수만으로는 알 수
+// 없음), 버튼은 일단 숨겨두고 applyContentClamp()가 렌더링 후 실제로 넘치는
+// 경우에만 보여줍니다. entryCard()뿐 아니라 retro/collection의 자체 카드
+// 템플릿에서도 이 함수를 그대로 재사용합니다.
+export function contentBlockHtml(content) {
+  return `<p class="entry-content clamp-5">${escapeHtml(content).replace(/\n/g, '<br/>')}</p><button type="button" class="content-toggle" style="display:none">더 보기</button>`;
+}
+
+// "더 보기 / 접기" 토글 클릭을 이벤트 위임으로 처리합니다. container 안에서
+// 앞으로 새로 렌더링될 카드들에도 그대로 적용되도록, 이 함수는 리스트가 담기는
+// (재사용되는) 컨테이너 하나에 대해 한 번만 불러주면 됩니다.
+export function wireContentToggle(container) {
+  container.addEventListener('click', (e) => {
+    const btn = e.target.closest('.content-toggle');
+    if (!btn) return;
+    const contentEl = btn.previousElementSibling;
+    if (!contentEl) return;
+    const expanded = contentEl.classList.toggle('expanded');
+    btn.textContent = expanded ? '접기' : '더 보기';
+  });
+}
+
+// 방금 새로 렌더링된 .entry-content 중, 실제로 5줄을 넘어서 잘린 것들만
+// "더 보기" 버튼을 보이게 합니다. 리스트 내용을 innerHTML로 새로 그릴 때마다
+// (검색어 입력, 필터 변경, 데이터 변경 등) 매번 다시 불러줘야 합니다.
+export function applyContentClamp(container) {
+  if (!container) return;
+  requestAnimationFrame(() => {
+    container.querySelectorAll('.entry-content.clamp-5').forEach((el) => {
+      const btn = el.nextElementSibling;
+      if (!btn || !btn.classList.contains('content-toggle')) return;
+      if (el.classList.contains('expanded')) return; // 펼쳐둔 상태는 그대로 유지
+      btn.style.display = el.scrollHeight > el.clientHeight + 1 ? '' : 'none';
+    });
+  });
 }
 
 // 기록 삭제 버튼을 이벤트 위임으로 처리하는 공용 헬퍼.

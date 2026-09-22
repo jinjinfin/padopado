@@ -22,6 +22,7 @@ export const ENTRY_TYPES = [
   { id: 'link', label: '링크', emoji: '🔗', hint: '웹페이지 링크와 간단한 설명' },
   { id: 'thought', label: '생각', emoji: '✍️', hint: '지금 떠오른 내 생각' },
   { id: 'media', label: '영상/작품', emoji: '🎬', hint: '영화·드라마·유튜브' },
+  { id: 'word', label: '단어', emoji: '🔤', hint: '새로 알게 된 단어와 뜻' },
 ];
 
 export const RETRO_PERIODS = [
