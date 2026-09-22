@@ -5,7 +5,7 @@ import * as collections from '../collections.js';
 import * as search from '../search.js';
 import { ENTRY_TYPES } from '../config.js';
 import { openCapture } from './capture.js';
-import { entryCard } from './shared.js';
+import { entryCard, wireEntryDelete } from './shared.js';
 
 const FEED_TYPES = ENTRY_TYPES.filter((t) => t.id !== 'retro');
 
@@ -51,6 +51,8 @@ export function render(container) {
     currentQuery = searchInput.value;
     rerenderList(container);
   });
+
+  wireEntryDelete(container.querySelector('#feed-list'), entries);
 
   rebuildSearchIndex();
   rerenderList(container);

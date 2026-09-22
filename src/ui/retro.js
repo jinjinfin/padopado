@@ -3,7 +3,7 @@
 import * as entries from '../entries.js';
 import { RETRO_PERIODS } from '../config.js';
 import { openCapture } from './capture.js';
-import { escapeHtml, formatDate } from './shared.js';
+import { escapeHtml, formatDate, wireEntryDelete } from './shared.js';
 
 let unsub = null;
 
@@ -86,6 +86,8 @@ export function render(container) {
     btn.addEventListener('click', () => startRetro(container, btn.dataset.period));
   });
 
+  wireEntryDelete(container.querySelector('#retro-list'), entries);
+
   renderList(container);
   unsub = entries.onChange(() => renderList(container));
   return () => { if (unsub) unsub(); };
@@ -103,7 +105,13 @@ function renderList(container) {
     const label = RETRO_PERIODS.find((r) => r.id === e.retroPeriod)?.label || '회고';
     return `
       <article class="entry-card">
-        <div class="entry-meta"><span class="entry-type">🪞 ${label}</span><span class="entry-time">${formatDate(e.createdAt)}</span></div>
+        <div class="entry-meta">
+          <span class="entry-type">🪞 ${label}</span>
+          <span class="entry-meta-right">
+            <span class="entry-time">${formatDate(e.createdAt)}</span>
+            <button type="button" class="entry-delete" data-id="${e.id}" aria-label="삭제">✕</button>
+          </span>
+        </div>
         <p class="entry-content">${escapeHtml(e.content).replace(/\n/g, '<br/>')}</p>
       </article>
     `;

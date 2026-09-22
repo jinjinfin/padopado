@@ -3,7 +3,7 @@
 import * as collections from '../collections.js';
 import * as entries from '../entries.js';
 import { COLLECTION_KINDS } from '../config.js';
-import { escapeHtml, formatDate } from './shared.js';
+import { escapeHtml, formatDate, wireEntryDelete } from './shared.js';
 
 let unsubCollections = null;
 let unsubEntries = null;
@@ -89,7 +89,12 @@ function renderDetail(container, itemId) {
       <div class="entry-list">
         ${itemEntries.map((e) => `
           <article class="entry-card">
-            <div class="entry-meta"><span class="entry-time">${formatDate(e.createdAt)}</span></div>
+            <div class="entry-meta">
+              <span class="entry-meta-right">
+                <span class="entry-time">${formatDate(e.createdAt)}</span>
+                <button type="button" class="entry-delete" data-id="${e.id}" aria-label="삭제">✕</button>
+              </span>
+            </div>
             <p class="entry-content">${escapeHtml(e.content).replace(/\n/g, '<br/>')}</p>
           </article>
         `).join('') || '<div class="empty-state">아직 이 항목에서 모은 기록이 없어요.</div>'}
@@ -101,4 +106,5 @@ function renderDetail(container, itemId) {
   container.querySelector('#item-finished').addEventListener('change', (e) => {
     collections.updateItem(item.id, { finished: e.target.checked });
   });
+  wireEntryDelete(container.querySelector('.entry-list'), entries);
 }

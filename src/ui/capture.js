@@ -61,10 +61,6 @@ function renderModal({ presetType, presetRetroPeriod, retroMode, referenceEntrie
   const chips = ENTRY_TYPES.map(
     (t) => `<button type="button" class="chip type-chip${presetType === t.id ? ' active' : ''}" data-type="${t.id}" title="${t.hint}">${t.emoji} ${t.label}</button>`
   ).join('');
-  const retroChips = RETRO_PERIODS.map(
-    (r) => `<button type="button" class="chip retro-chip${presetRetroPeriod === r.id ? ' active' : ''}" data-retro="${r.id}">${r.label}</button>`
-  ).join('');
-  const showRetroChips = presetType === 'retro' && !retroMode;
 
   const referenceToggleBtn = referenceEntries.length
     ? `<button type="button" class="btn secondary" id="toggle-reference">📚 이 기간의 기록 보기 (${referenceEntries.length}개)</button>`
@@ -94,7 +90,6 @@ function renderModal({ presetType, presetRetroPeriod, retroMode, referenceEntrie
       ${referenceListPanel}
 
       ${retroMode ? '' : `<div class="chip-row" id="type-chips">${chips}</div>`}
-      ${retroMode ? '' : `<div class="chip-row" id="retro-chips" style="display:${showRetroChips ? 'flex' : 'none'}">${retroChips}</div>`}
 
       <textarea id="capture-content" placeholder="지금 기록하고 싶은 것을 적어보세요. 사진으로 찍으면 자동으로 글자를 인식해요." rows="8"></textarea>
       <div id="ocr-status" class="hint" style="display:none"></div>
@@ -136,14 +131,6 @@ function wireModal({ presetType, presetRetroPeriod, retroMode, prefillContent })
       if (!btn) return;
       selectedType = selectedType === btn.dataset.type ? null : btn.dataset.type;
       modalEl.querySelectorAll('.type-chip').forEach((c) => c.classList.toggle('active', c === btn && selectedType));
-      $('#retro-chips').style.display = selectedType === 'retro' ? 'flex' : 'none';
-    });
-
-    $('#retro-chips').addEventListener('click', (e) => {
-      const btn = e.target.closest('.retro-chip');
-      if (!btn) return;
-      selectedRetro = btn.dataset.retro;
-      modalEl.querySelectorAll('.retro-chip').forEach((c) => c.classList.toggle('active', c === btn));
     });
   }
 

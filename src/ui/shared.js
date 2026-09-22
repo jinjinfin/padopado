@@ -56,7 +56,10 @@ export function entryCard(entry, collectionsById = new Map()) {
     <article class="entry-card" data-id="${entry.id}">
       <div class="entry-meta">
         <span class="entry-type">${typeInfo.emoji} ${typeInfo.label}</span>
-        <span class="entry-time">${formatDate(entry.createdAt)}${pendingBadge}</span>
+        <span class="entry-meta-right">
+          <span class="entry-time">${formatDate(entry.createdAt)}${pendingBadge}</span>
+          <button type="button" class="entry-delete" data-id="${entry.id}" aria-label="삭제">✕</button>
+        </span>
       </div>
       ${sourceLine ? `<div class="entry-source">${escapeHtml(sourceLine)}</div>` : ''}
       <p class="entry-content">${escapeHtml(entry.content).replace(/\n/g, '<br/>')}</p>
@@ -64,4 +67,15 @@ export function entryCard(entry, collectionsById = new Map()) {
       ${tags ? `<div class="entry-tags">${tags}</div>` : ''}
     </article>
   `;
+}
+
+// 기록 삭제 버튼을 이벤트 위임으로 처리하는 공용 헬퍼.
+// container 안 어디든 있는 .entry-delete 버튼 클릭을 잡아서, 확인 후 삭제합니다.
+export function wireEntryDelete(container, entriesMod) {
+  container.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.entry-delete');
+    if (!btn) return;
+    if (!window.confirm('이 기록을 삭제할까요? 되돌릴 수 없어요.')) return;
+    await entriesMod.deleteEntry(btn.dataset.id);
+  });
 }
