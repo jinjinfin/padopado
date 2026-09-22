@@ -1,0 +1,62 @@
+name: 회고 알림 발송
+
+# 기록 데이터(구독 목록, 컬렉션, 기록 모두)는 이 코드 저장소가 아니라 별도의 Private
+# 데이터 저장소에 있습니다. 그래서 이 저장소를 한 번, 데이터 저장소를 한 번 더
+# 체크아웃합니다. 이 워크플로는 회고 알림뿐 아니라, "완독" 표시 없이 30일 넘게
+# 조용한 컬렉션 항목이 있으면 "OO 아직 보고 있나요?" 알림도 함께 확인해서 보냅니다.
+# 저장소 Settings에서 아래 두 가지를 등록해야 정상 동작합니다:
+#   - Variables: DATA_REPO = "사용자명/데이터저장소이름" (예: jinjinfin/padopado-data)
+#   - Secrets:   DATA_REPO_TOKEN = 데이터 저장소에 Contents 읽기/쓰기 권한을 가진 PAT
+#   - Secrets:   VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY / VAPID_SUBJECT
+
+on:
+  schedule:
+    # 매일 12:00 UTC = 21:00 KST. 스크립트 내부에서 금요일/월말/분기말/연말 여부를 판단합니다.
+    - cron: '0 12 * * *'
+  workflow_dispatch: {} # 수동으로도 실행해서 테스트할 수 있게 합니다.
+
+permissions:
+  contents: read
+
+jobs:
+  send-reminders:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 코드 저장소 체크아웃
+        uses: actions/checkout@v4
+
+      - name: 데이터 저장소 체크아웃
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ vars.DATA_REPO }}
+          token: ${{ secrets.DATA_REPO_TOKEN }}
+          path: data-repo
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm install --omit=dev
+
+      - name: 알림 발송
+        env:
+          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
+          SUBS_PATH: data-repo/data/meta/push-subscriptions.json
+          COLLECTIONS_PATH: data-repo/data/collections.json
+          ENTRIES_DIR: data-repo/data/entries
+        run: npm run reminders
+
+      - name: 변경 사항 커밋 (데이터 저장소에)
+        working-directory: data-repo
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if ! git diff --quiet -- data/meta/push-subscriptions.json data/collections.json; then
+            git add data/meta/push-subscriptions.json data/collections.json
+            git commit -m "chore: 알림 발송 후 상태 정리 (만료 구독 정리 / 컬렉션 알림 표시)"
+            git push
+          else
+            echo "변경 사항 없음"
+          fi
