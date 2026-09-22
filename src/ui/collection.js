@@ -2,7 +2,7 @@
 // 글귀를 기록하며 책 제목을 남기거나, 영상/작품을 기록하며 작품명을 남기면 자동으로 여기 쌓입니다.
 import * as collections from '../collections.js';
 import * as entries from '../entries.js';
-import { COLLECTION_KINDS } from '../config.js';
+import { COLLECTION_KINDS, canWrite } from '../config.js';
 import { escapeHtml, formatDate, wireEntryDelete, wireEntryEdit } from './shared.js';
 import { openCapture } from './capture.js';
 
@@ -78,14 +78,24 @@ function renderDetail(container, itemId) {
   const kindInfo = COLLECTION_KINDS[item.kind] || COLLECTION_KINDS.book;
   const itemEntries = entries.getEntries().filter((e) => e.collectionId === itemId);
 
+  // 읽기 전용 연결(다른 사람에게 보기 전용으로 나눠준 토큰)이면 완독 체크와
+  // 기록 수정/삭제 버튼을 숨깁니다 — 어차피 GitHub이 저장을 거부할 테니까요.
+  const finishToggleHtml = canWrite()
+    ? `<label class="finish-toggle">
+        <input type="checkbox" id="item-finished" ${item.finished ? 'checked' : ''}/> ${kindInfo.doneLabel}
+      </label>`
+    : '';
+  const actionButtons = (id) => canWrite()
+    ? `<button type="button" class="entry-edit" data-id="${id}" aria-label="수정">✎</button>
+       <button type="button" class="entry-delete" data-id="${id}" aria-label="삭제">✕</button>`
+    : '';
+
   container.innerHTML = `
     <div class="view book-detail-view">
       <button type="button" class="back-btn" id="book-back">← 컬렉션으로</button>
       <h1 class="view-title">${kindInfo.icon} ${escapeHtml(item.title)}</h1>
       <p class="view-subtitle">${escapeHtml(item.author || '')}</p>
-      <label class="finish-toggle">
-        <input type="checkbox" id="item-finished" ${item.finished ? 'checked' : ''}/> ${kindInfo.doneLabel}
-      </label>
+      ${finishToggleHtml}
       <div class="stat-pill">${itemEntries.length}개의 기록을 모았어요</div>
       <div class="entry-list">
         ${itemEntries.map((e) => `
@@ -93,8 +103,7 @@ function renderDetail(container, itemId) {
             <div class="entry-meta">
               <span class="entry-meta-right">
                 <span class="entry-time">${formatDate(e.createdAt)}</span>
-                <button type="button" class="entry-edit" data-id="${e.id}" aria-label="수정">✎</button>
-                <button type="button" class="entry-delete" data-id="${e.id}" aria-label="삭제">✕</button>
+                ${actionButtons(e.id)}
               </span>
             </div>
             <p class="entry-content">${escapeHtml(e.content).replace(/\n/g, '<br/>')}</p>
@@ -105,9 +114,12 @@ function renderDetail(container, itemId) {
   `;
 
   container.querySelector('#book-back').addEventListener('click', () => renderList(container));
-  container.querySelector('#item-finished').addEventListener('change', (e) => {
-    collections.updateItem(item.id, { finished: e.target.checked });
-  });
+  const finishedCheckbox = container.querySelector('#item-finished');
+  if (finishedCheckbox) {
+    finishedCheckbox.addEventListener('change', (e) => {
+      collections.updateItem(item.id, { finished: e.target.checked });
+    });
+  }
   wireEntryDelete(container.querySelector('.entry-list'), entries);
   wireEntryEdit(container.querySelector('.entry-list'), (id) => {
     const entry = entries.getEntries().find((e) => e.id === id);

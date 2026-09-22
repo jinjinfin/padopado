@@ -1,6 +1,5 @@
 // 여러 화면에서 공용으로 쓰는 렌더링 헬퍼.
-import { ENTRY_TYPES } from '../config.js';
-import { withUnlock } from './lock.js';
+import { ENTRY_TYPES, canWrite } from '../config.js';
 
 const TYPE_MAP = new Map(ENTRY_TYPES.map((t) => [t.id, t]));
 
@@ -52,6 +51,13 @@ export function entryCard(entry, collectionsById = new Map()) {
     ? `<a href="${escapeHtml(entry.url)}" target="_blank" rel="noopener" class="entry-link">${escapeHtml(entry.url)}</a>`
     : '';
   const pendingBadge = entry.syncStatus === 'pending' ? '<span class="pending-dot" title="동기화 대기 중">●</span>' : '';
+  // 읽기 전용 연결(다른 사람에게 "보기 전용"으로 나눠준 토큰)이면 수정/삭제
+  // 버튼 자체를 안 보여줍니다 — 어차피 GitHub이 저장을 거부할 텐데, 눌러봤다가
+  // 실패하는 것보다 처음부터 없는 게 더 매끄러운 경험이라서요.
+  const actionButtons = canWrite()
+    ? `<button type="button" class="entry-edit" data-id="${entry.id}" aria-label="수정">✎</button>
+       <button type="button" class="entry-delete" data-id="${entry.id}" aria-label="삭제">✕</button>`
+    : '';
 
   return `
     <article class="entry-card" data-id="${entry.id}">
@@ -59,8 +65,7 @@ export function entryCard(entry, collectionsById = new Map()) {
         <span class="entry-type">${typeInfo.emoji} ${typeInfo.label}</span>
         <span class="entry-meta-right">
           <span class="entry-time">${formatDate(entry.createdAt)}${pendingBadge}</span>
-          <button type="button" class="entry-edit" data-id="${entry.id}" aria-label="수정">✎</button>
-          <button type="button" class="entry-delete" data-id="${entry.id}" aria-label="삭제">✕</button>
+          ${actionButtons}
         </span>
       </div>
       ${sourceLine ? `<div class="entry-source">${escapeHtml(sourceLine)}</div>` : ''}
@@ -73,28 +78,23 @@ export function entryCard(entry, collectionsById = new Map()) {
 
 // 기록 삭제 버튼을 이벤트 위임으로 처리하는 공용 헬퍼.
 // container 안 어디든 있는 .entry-delete 버튼 클릭을 잡아서, 확인 후 삭제합니다.
-// 설정 화면 잠금이 걸려 있으면(withUnlock), 삭제도 비밀번호를 맞혀야 진행됩니다 —
-// 같이 쓰는 사람이 기록을 지우는 것도 쓰는 것만큼 막아야 하는 일이라서요.
 export function wireEntryDelete(container, entriesMod) {
   container.addEventListener('click', (e) => {
     const btn = e.target.closest('.entry-delete');
     if (!btn) return;
-    withUnlock(async () => {
-      if (!window.confirm('이 기록을 삭제할까요? 되돌릴 수 없어요.')) return;
-      await entriesMod.deleteEntry(btn.dataset.id);
-    });
+    if (!window.confirm('이 기록을 삭제할까요? 되돌릴 수 없어요.')) return;
+    entriesMod.deleteEntry(btn.dataset.id);
   });
 }
 
 // 기록 수정 버튼을 이벤트 위임으로 처리하는 공용 헬퍼.
-// container 안 어디든 있는 .entry-edit 버튼 클릭을 잡으면, 잠금을 확인한 뒤
-// onEdit(id)를 호출합니다. 실제로 어떤 기록인지 찾아서 캡처 모달을 여는 일은
-// 각 화면(feed/collection/retro)이 entries 모듈을 이미 들고 있으므로, 그쪽에서
-// 콜백으로 처리합니다.
+// container 안 어디든 있는 .entry-edit 버튼 클릭을 잡으면 onEdit(id)를 호출합니다.
+// 실제로 어떤 기록인지 찾아서 캡처 모달을 여는 일은 각 화면(feed/collection/retro)이
+// entries 모듈을 이미 들고 있으므로, 그쪽에서 콜백으로 처리합니다.
 export function wireEntryEdit(container, onEdit) {
   container.addEventListener('click', (e) => {
     const btn = e.target.closest('.entry-edit');
     if (!btn) return;
-    withUnlock(() => onEdit(btn.dataset.id));
+    onEdit(btn.dataset.id);
   });
 }

@@ -46,8 +46,8 @@ async function apiRequest(path, options = {}) {
  * 저장소의 파일 하나를 읽습니다.
  * 반환값: { data: <파싱된 JSON, 없으면 null>, sha: <있으면 문자열, 없으면 null>, exists: bool }
  */
-export async function getJSONFile(path) {
-  const { owner, repo, branch } = getRepoConfig();
+export async function getJSONFile(path, repoOverride) {
+  const { owner, repo, branch } = repoOverride || getRepoConfig();
   const res = await apiRequest(`/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}?ref=${encodeURIComponent(branch)}`);
   if (res.status === 404) {
     return { data: null, sha: null, exists: false };
@@ -82,10 +82,10 @@ export async function listDir(path) {
  * 파일을 생성하거나 갱신합니다. sha 충돌(409/422) 시 최신 내용을 다시 읽어
  * updater 콜백으로 병합한 뒤 재시도합니다. (동시 기기 사용 시 데이터 유실 방지)
  */
-export async function putJSONFile(path, updater, message, { maxRetries = 3 } = {}) {
-  const { owner, repo, branch } = getRepoConfig();
+export async function putJSONFile(path, updater, message, { maxRetries = 3, repoOverride } = {}) {
+  const { owner, repo, branch } = repoOverride || getRepoConfig();
   let attempt = 0;
-  let current = await getJSONFile(path);
+  let current = await getJSONFile(path, repoOverride);
 
   while (attempt <= maxRetries) {
     const nextData = await updater(current.data, current);
@@ -106,12 +106,26 @@ export async function putJSONFile(path, updater, message, { maxRetries = 3 } = {
     if (res.status === 409 || res.status === 422) {
       // 다른 기기가 먼저 저장한 경우: 최신본을 다시 받아서 재병합
       attempt += 1;
-      current = await getJSONFile(path);
+      current = await getJSONFile(path, repoOverride);
       continue;
     }
     throw new GitHubError(`GitHub 저장 실패: ${path} (${res.status})`, res.status, await safeText(res));
   }
   throw new GitHubError(`GitHub 저장 충돌을 해결하지 못했습니다: ${path}`, 409);
+}
+
+/**
+ * 파일을 삭제합니다. (공유 링크를 끌 때, 올려둔 스냅샷 JSON을 지우는 데 사용)
+ */
+export async function deleteFile(path, sha, message, repoOverride) {
+  const { owner, repo, branch } = repoOverride || getRepoConfig();
+  const res = await apiRequest(`/repos/${owner}/${repo}/contents/${encodeURIComponent(path)}`, {
+    method: 'DELETE',
+    body: JSON.stringify({ message, sha, branch }),
+  });
+  if (!res.ok && res.status !== 404) {
+    throw new GitHubError(`GitHub 파일 삭제 실패: ${path} (${res.status})`, res.status, await safeText(res));
+  }
 }
 
 export async function testConnection() {
@@ -121,6 +135,17 @@ export async function testConnection() {
     throw new GitHubError(`저장소에 연결할 수 없습니다 (${res.status}). owner/repo/토큰 권한을 확인하세요.`, res.status, await safeText(res));
   }
   return res.json();
+}
+
+/**
+ * 지금 설정된 토큰이 이 저장소에 "쓰기(push)" 권한이 있는지 확인합니다.
+ * 다른 사람에게 읽기 전용(Contents: Read-only) 토큰을 나눠준 경우를 감지해서,
+ * 화면에서 글쓰기/수정/삭제 버튼을 숨기는 데 씁니다. GitHub이 인증된 요청에
+ * 대해 저장소 정보와 함께 permissions.push를 내려줍니다.
+ */
+export async function checkWriteAccess() {
+  const repoInfo = await testConnection();
+  return Boolean(repoInfo.permissions?.push);
 }
 
 async function safeText(res) {

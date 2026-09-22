@@ -1,9 +1,8 @@
 // 회고: 주/월/분기/연 단위 회고를 쉽게 쓰도록 안내하고, 지난 회고를 모아 봅니다.
 // 회고를 쓸 때는 그 기간 동안 쌓인 기록들을 "재료"로 함께 열어볼 수 있습니다.
 import * as entries from '../entries.js';
-import { RETRO_PERIODS } from '../config.js';
+import { RETRO_PERIODS, canWrite } from '../config.js';
 import { openCapture } from './capture.js';
-import { withUnlock } from './lock.js';
 import { escapeHtml, formatDate, wireEntryDelete, wireEntryEdit } from './shared.js';
 
 let unsub = null;
@@ -66,25 +65,31 @@ function startRetro(container, period) {
 }
 
 export function render(container) {
-  container.innerHTML = `
-    <div class="view retro-view">
-      <h1 class="view-title">🪞 회고</h1>
-      <p class="view-subtitle">쌓인 기록들을 재료 삼아 돌아보고, 나만의 글로 정리해보세요.</p>
-      <div class="retro-buttons">
+  // 읽기 전용 연결(다른 사람에게 보기 전용으로 나눠준 토큰)이면 회고를 새로
+  // 쓸 수 없으니, 시작 버튼 대신 안내 문구만 보여줍니다.
+  const retroButtonsHtml = canWrite()
+    ? `<div class="retro-buttons">
         ${RETRO_PERIODS.map((r) => `
           <button type="button" class="btn secondary retro-start" data-period="${r.id}">
             ${r.label} 쓰기
             <span class="retro-btn-desc">${PERIOD_DESC[r.id]}</span>
           </button>
         `).join('')}
-      </div>
+      </div>`
+    : '<p class="hint">읽기 전용으로 연결되어 있어서 새 회고를 쓸 수 없어요.</p>';
+
+  container.innerHTML = `
+    <div class="view retro-view">
+      <h1 class="view-title">🪞 회고</h1>
+      <p class="view-subtitle">쌓인 기록들을 재료 삼아 돌아보고, 나만의 글로 정리해보세요.</p>
+      ${retroButtonsHtml}
       <h2 class="section-title">지난 회고</h2>
       <div id="retro-list" class="entry-list"></div>
     </div>
   `;
 
   container.querySelectorAll('.retro-start').forEach((btn) => {
-    btn.addEventListener('click', () => withUnlock(() => startRetro(container, btn.dataset.period)));
+    btn.addEventListener('click', () => startRetro(container, btn.dataset.period));
   });
 
   wireEntryDelete(container.querySelector('#retro-list'), entries);
@@ -107,6 +112,10 @@ function renderList(container) {
     listEl.innerHTML = '<div class="empty-state">아직 작성한 회고가 없어요.</div>';
     return;
   }
+  const actionButtons = (id) => canWrite()
+    ? `<button type="button" class="entry-edit" data-id="${id}" aria-label="수정">✎</button>
+       <button type="button" class="entry-delete" data-id="${id}" aria-label="삭제">✕</button>`
+    : '';
   listEl.innerHTML = retros.map((e) => {
     const label = RETRO_PERIODS.find((r) => r.id === e.retroPeriod)?.label || '회고';
     return `
@@ -115,8 +124,7 @@ function renderList(container) {
           <span class="entry-type">🪞 ${label}</span>
           <span class="entry-meta-right">
             <span class="entry-time">${formatDate(e.createdAt)}</span>
-            <button type="button" class="entry-edit" data-id="${e.id}" aria-label="수정">✎</button>
-            <button type="button" class="entry-delete" data-id="${e.id}" aria-label="삭제">✕</button>
+            ${actionButtons(e.id)}
           </span>
         </div>
         <p class="entry-content">${escapeHtml(e.content).replace(/\n/g, '<br/>')}</p>

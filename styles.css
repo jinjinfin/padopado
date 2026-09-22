@@ -227,6 +227,7 @@ textarea { resize: vertical; }
 }
 .btn.primary { background: var(--accent); color: #fff; width: 100%; }
 .btn.secondary { background: var(--accent-soft); color: var(--accent); }
+.btn.danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
 .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin: 10px 0; }
 .hint { font-size: 13px; color: var(--text-dim); margin: 4px 0 12px; }
 
@@ -275,3 +276,10 @@ textarea { resize: vertical; }
 .reference-item .entry-content { font-size: 13.5px; }
 
 .settings-section { margin-bottom: 26px; }
+
+/* 공유 보기(읽기 전용, 링크 전용) 화면 */
+.viewer-view { padding-bottom: 24px; }
+.viewer-banner {
+  background: var(--accent-soft); color: var(--accent); font-size: 13px; font-weight: 600;
+  padding: 10px 14px; border-radius: var(--radius); margin-bottom: 16px; text-align: center;
+}

@@ -9,6 +9,9 @@ export const LS_KEYS = {
   vapidPublicKey: 'jot.push.vapidPublicKey',
   lastSyncedYears: 'jot.sync.years',
   settingsPinHash: 'jot.settings.pinHash',
+  canWrite: 'jot.gh.canWrite',
+  publicRepo: 'jot.share.publicRepo',
+  shareSlug: 'jot.share.slug',
 };
 
 // '회고'는 여기 없습니다 — 일반 작성 모달의 유형 선택지가 아니라, 회고 탭에서만
@@ -101,4 +104,36 @@ export async function verifySettingsPin(pin) {
   const stored = getSetting(LS_KEYS.settingsPinHash);
   if (!stored) return true; // 아직 비밀번호를 설정한 적 없으면 잠겨있지 않은 상태
   return (await sha256Hex(pin)) === stored;
+}
+
+// 읽기 전용 모드: 내 기록을 다른 사람이 자기 기기에서 "보기 전용"으로 볼 수
+// 있게, 쓰기 권한이 없는(Contents: Read-only) GitHub 토큰을 나눠줄 수 있습니다.
+// 그 토큰으로 연결하면 이 값이 false가 되고, 글쓰기/수정/삭제 버튼들이
+// 화면에서 아예 숨겨집니다(어차피 GitHub이 저장을 거부하겠지만, 시도했다가
+// 실패하는 것보다 처음부터 안 보이는 게 더 매끄러운 경험이라서요).
+// 실제 쓰기 가능 여부 확인은 github.js가 GitHub API로 하고, 그 결과만 여기
+// 저장해둡니다. 한 번도 확인한 적 없으면(과거 버전 등) 기본값은 "쓰기 가능"으로
+// 간주해서, 기존 사용자의 화면이 갑자기 바뀌지 않도록 합니다.
+export function canWrite() {
+  return getSetting(LS_KEYS.canWrite) !== 'false';
+}
+
+export function setCanWrite(value) {
+  setSetting(LS_KEYS.canWrite, value ? '' : 'false');
+}
+
+// 링크 공유 보기: "토큰 없이 링크만으로" 다른 사람이 내 기록을 읽기 전용으로
+// 볼 수 있게, 지금 쓰고 있는 (쓰기 가능한) 토큰으로 공개 저장소(코드가 올라가
+// 있는, 이미 GitHub Pages로 공개된 그 저장소)에 스냅샷 JSON을 올려두고, 그
+// 파일 경로를 URL로 나눠줍니다. 데이터 저장소(padopado-data)는 여전히
+// 비공개로 유지하면서, 공유하기로 한 스냅샷만 공개 저장소를 통해 노출되는
+// 구조입니다 — 링크 자체가 추측하기 어려운 문자열이라는 점으로 보호되는
+// 것이지, 비밀번호로 보호되는 건 아니라는 점을 설정 화면에서도 안내합니다.
+export function getPublicRepoConfig() {
+  return {
+    owner: getSetting(LS_KEYS.owner), // 데이터 저장소와 같은 GitHub 계정이라고 가정
+    repo: getSetting(LS_KEYS.publicRepo) || 'padopado',
+    branch: 'main',
+    token: getSetting(LS_KEYS.token),
+  };
 }

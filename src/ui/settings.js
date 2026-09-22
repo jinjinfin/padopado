@@ -8,11 +8,14 @@ import {
   setSettingsPin,
   clearSettingsPin,
   verifySettingsPin,
+  canWrite,
+  setCanWrite,
 } from '../config.js';
 import * as gh from '../github.js';
 import * as entriesMod from '../entries.js';
 import * as collectionsMod from '../collections.js';
 import * as push from '../push.js';
+import * as share from '../share.js';
 import { isUnlocked, markUnlocked } from './lock.js';
 
 // 잠금 해제 상태는 lock.js가 앱 전체(설정 화면 + 글쓰기/수정/삭제)에서
@@ -56,6 +59,38 @@ function renderLock(container) {
   $('#settings-pin-input').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') tryUnlock();
   });
+}
+
+function renderShareSectionBody() {
+  if (!canWrite()) {
+    return '<p class="hint">읽기 전용으로 연결되어 있어서 공유 링크를 만들 수 없어요.</p>';
+  }
+  const slug = share.getShareSlug();
+  const publicRepoValue = escapeAttr(getSetting(LS_KEYS.publicRepo) || 'padopado');
+  const repoField = `<input type="text" id="public-repo-name" placeholder="공개 저장소 이름 (예: padopado)" value="${publicRepoValue}" />`;
+  if (!slug) {
+    return `
+      <p class="hint">지금 쓴 기록을 다른 사람이 자기 기기에서 "링크"만으로, 로그인 없이 읽기 전용으로 볼 수 있게 해줘요. 비밀번호가 아니라 링크 자체로 보호되는 거라, 믿을 수 있는 사람에게만 전달해주세요.</p>
+      <p class="hint">이 기능을 쓰려면 지금 연결된 토큰이 코드가 올라간 공개 저장소에도 쓰기 권한이 있어야 해요. GitHub에서 토큰을 편집해서 그 저장소도 "Contents: Read and write"로 추가해주세요.</p>
+      ${repoField}
+      <div class="btn-row">
+        <button type="button" class="btn primary" id="share-create">공유 링크 만들기</button>
+      </div>
+      <div id="share-status" class="hint"></div>
+    `;
+  }
+  const url = share.getShareUrl();
+  return `
+    <p class="hint">아래 링크를 아는 사람은 누구나 로그인 없이 지금 내 기록을 읽기 전용으로 볼 수 있어요.</p>
+    ${repoField}
+    <input type="text" id="share-url" readonly value="${escapeAttr(url)}" />
+    <div class="btn-row">
+      <button type="button" class="btn secondary" id="share-copy">링크 복사</button>
+      <button type="button" class="btn secondary" id="share-refresh">최신 내용으로 갱신</button>
+      <button type="button" class="btn danger" id="share-revoke">공유 끄기</button>
+    </div>
+    <div id="share-status" class="hint"></div>
+  `;
 }
 
 function renderSettings(container) {
@@ -107,6 +142,11 @@ function renderSettings(container) {
         </div>
         <div id="settings-pin-status" class="hint"></div>
       </section>
+
+      <section class="settings-section">
+        <h2 class="section-title">🔗 다른 사람에게 보여주기</h2>
+        ${renderShareSectionBody()}
+      </section>
     </div>
   `;
 
@@ -114,26 +154,37 @@ function renderSettings(container) {
   wirePush(container);
   wireSync(container);
   wireLockSettings(container);
+  wireShare(container);
 }
 
 function wireGithub(container) {
   const $ = (s) => container.querySelector(s);
-  $('#gh-save').addEventListener('click', () => {
+  $('#gh-save').addEventListener('click', async () => {
     setSetting(LS_KEYS.owner, $('#gh-owner').value.trim());
     setSetting(LS_KEYS.repo, $('#gh-repo').value.trim());
     setSetting(LS_KEYS.branch, $('#gh-branch').value.trim() || 'main');
     setSetting(LS_KEYS.token, $('#gh-token').value.trim());
-    $('#gh-status').textContent = '저장했어요. 아래 "연결 테스트"로 확인해보세요.';
+    $('#gh-status').textContent = '저장했어요. 확인 중...';
     if (isConfigured()) {
       entriesMod.init();
       collectionsMod.init();
+      try {
+        setCanWrite(await gh.checkWriteAccess());
+        $('#gh-status').textContent = canWrite()
+          ? '저장했어요. 쓰기 가능한 연결이에요.'
+          : '저장했어요. 읽기 전용 연결이에요 — 이 화면에서는 글을 쓰거나 고칠 수 없어요.';
+      } catch (e) {
+        $('#gh-status').textContent = `저장했지만 확인 중 문제가 있었어요: ${e.message}`;
+      }
     }
   });
   $('#gh-test').addEventListener('click', async () => {
     $('#gh-status').textContent = '확인 중...';
     try {
       const repo = await gh.testConnection();
-      $('#gh-status').textContent = `연결 성공! (${repo.full_name}, private: ${repo.private})`;
+      const writable = Boolean(repo.permissions?.push);
+      setCanWrite(writable);
+      $('#gh-status').textContent = `연결 성공! (${repo.full_name}, private: ${repo.private}, ${writable ? '쓰기 가능' : '읽기 전용'})`;
     } catch (e) {
       $('#gh-status').textContent = `연결 실패: ${e.message}`;
     }
@@ -205,6 +256,70 @@ function wireLockSettings(container) {
       if (!window.confirm('설정 화면 잠금을 끌까요?')) return;
       clearSettingsPin();
       renderSettings(container);
+    });
+  }
+}
+
+function wireShare(container) {
+  const $ = (s) => container.querySelector(s);
+  const statusEl = () => $('#share-status');
+  const saveRepoField = () => {
+    const el = $('#public-repo-name');
+    if (el) setSetting(LS_KEYS.publicRepo, el.value.trim());
+  };
+
+  const createBtn = $('#share-create');
+  if (createBtn) {
+    createBtn.addEventListener('click', async () => {
+      saveRepoField();
+      statusEl().textContent = '공유 링크를 만드는 중...';
+      try {
+        await share.publishShare();
+        renderSettings(container);
+      } catch (e) {
+        statusEl().textContent = `실패: ${e.message}`;
+      }
+    });
+  }
+
+  const refreshBtn = $('#share-refresh');
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', async () => {
+      saveRepoField();
+      statusEl().textContent = '최신 내용으로 갱신하는 중...';
+      try {
+        await share.publishShare();
+        statusEl().textContent = '최신 내용으로 갱신했어요.';
+      } catch (e) {
+        statusEl().textContent = `실패: ${e.message}`;
+      }
+    });
+  }
+
+  const revokeBtn = $('#share-revoke');
+  if (revokeBtn) {
+    revokeBtn.addEventListener('click', async () => {
+      if (!window.confirm('공유를 끌까요? 링크를 가진 사람도 더 이상 볼 수 없게 돼요.')) return;
+      statusEl().textContent = '공유를 끄는 중...';
+      try {
+        await share.revokeShare();
+        renderSettings(container);
+      } catch (e) {
+        statusEl().textContent = `실패: ${e.message}`;
+      }
+    });
+  }
+
+  const copyBtn = $('#share-copy');
+  if (copyBtn) {
+    copyBtn.addEventListener('click', async () => {
+      const url = $('#share-url').value;
+      try {
+        await navigator.clipboard.writeText(url);
+        statusEl().textContent = '링크를 복사했어요.';
+      } catch (e) {
+        statusEl().textContent = '복사에 실패했어요. 직접 선택해서 복사해주세요.';
+      }
     });
   }
 }
