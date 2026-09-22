@@ -7,11 +7,15 @@ import * as collectionUi from './ui/collection.js';
 import * as retroUi from './ui/retro.js';
 import * as dashboardUi from './ui/dashboard.js';
 import * as settingsUi from './ui/settings.js';
+import * as homeUi from './ui/home.js';
 import { openCapture } from './ui/capture.js';
 import { renderViewer } from './ui/viewer.js';
 import { isConfigured, canWrite, setCanWrite } from './config.js';
 
+// 메인 화면(#/home)은 탭바의 5개 탭과 별개인 숨은 화면입니다. 헤더 로고를
+// 누르는 게 유일한 진입 경로라서, hidden: true로 표시해 탭바에는 안 그려집니다.
 const ROUTES = {
+  '#/home': { render: homeUi.render, hidden: true },
   '#/': { render: feed.render, label: '영감', icon: '✨' },
   '#/collection': { render: collectionUi.render, label: '컬렉션', icon: '🗃️' },
   '#/retro': { render: retroUi.render, label: '회고', icon: '🪞' },
@@ -59,6 +63,7 @@ function updateFabVisibility(hash) {
 function renderTabbar(activeHash) {
   const bar = document.getElementById('tabbar');
   bar.innerHTML = Object.entries(ROUTES)
+    .filter(([, r]) => !r.hidden)
     .map(
       ([hash, r]) => `
       <a href="${hash}" class="tab ${hash === activeHash ? 'active' : ''}">
@@ -72,8 +77,10 @@ function renderTabbar(activeHash) {
 function renderShell() {
   document.getElementById('app').innerHTML = `
     <header id="app-header">
-      <img class="wordmark wordmark-light" src="./assets/brand/wordmark-light.png" alt="파도파도" />
-      <img class="wordmark wordmark-dark" src="./assets/brand/wordmark-dark.png" alt="파도파도" />
+      <button type="button" id="logo-btn" aria-label="메인 화면으로">
+        <img class="wordmark wordmark-light" src="./assets/brand/wordmark-light.png" alt="파도파도" />
+        <img class="wordmark wordmark-dark" src="./assets/brand/wordmark-dark.png" alt="파도파도" />
+      </button>
       <span id="offline-badge" class="offline-badge" style="display:none">오프라인</span>
     </header>
     <main id="view-root"></main>
@@ -81,6 +88,7 @@ function renderShell() {
     <nav id="tabbar"></nav>
   `;
   document.getElementById('fab').addEventListener('click', () => openCapture({ onSaved: () => {} }));
+  document.getElementById('logo-btn').addEventListener('click', () => { location.hash = '#/home'; });
   window.addEventListener('hashchange', renderRoute);
   updateOfflineBadge();
   window.addEventListener('online', updateOfflineBadge);

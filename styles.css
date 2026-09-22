@@ -115,6 +115,10 @@ body {
   position: sticky; top: 0; z-index: 5;
   display: flex; align-items: center; justify-content: center;
 }
+#logo-btn {
+  background: none; border: none; padding: 0; margin: 0; cursor: pointer;
+  display: flex; align-items: center; font: inherit; -webkit-tap-highlight-color: transparent;
+}
 .wordmark { height: 20px; width: auto; display: block; }
 .wordmark-dark { display: none; }
 @media (prefers-color-scheme: dark) {
@@ -129,21 +133,27 @@ body {
 
 #view-root { flex: 1; padding: 12px 16px calc(90px + var(--safe-bottom)); max-width: 640px; margin: 0 auto; width: 100%; }
 
-/* 포스트 목록이 있는 화면(영감/회고/컬렉션 상세)은 화면이 넓어질수록 한 줄에
-   더 많은 카드를 볼 수 있도록 컨테이너 자체도 함께 넓어집니다(최대 4열까지). */
+/* 포스트/서재 목록이 있는 화면(영감/회고/컬렉션 목록·상세)은 화면이 넓어질수록
+   한 줄에 더 많은 카드를 볼 수 있도록 컨테이너 자체도 함께 넓어집니다(최대 4열까지). */
 @media (min-width: 720px) {
-  #view-root:has(.entry-list) { max-width: 900px; }
+  #view-root:has(.entry-list), #view-root:has(.book-grid) { max-width: 900px; }
 }
 @media (min-width: 1040px) {
-  #view-root:has(.entry-list) { max-width: 1200px; }
+  #view-root:has(.entry-list), #view-root:has(.book-grid) { max-width: 1200px; }
 }
 @media (min-width: 1360px) {
-  #view-root:has(.entry-list) { max-width: 1400px; }
+  #view-root:has(.entry-list), #view-root:has(.book-grid) { max-width: 1400px; }
 }
 
 .view-title { font-size: 22px; margin: 8px 0 2px; }
 .view-subtitle { color: var(--text-dim); margin: 0 0 14px; font-size: 14px; }
 .section-title { font-size: 15px; color: var(--text-dim); margin: 22px 0 8px; text-transform: uppercase; letter-spacing: .04em; }
+
+/* 메인 화면: 로고를 누르면 오는 인사 화면. */
+.home-hero { display: flex; flex-direction: column; align-items: center; text-align: center; padding: 36px 16px 28px; }
+.home-wave { font-size: 44px; line-height: 1; margin-bottom: 10px; }
+.home-message { font-size: 18px; font-weight: 700; margin: 0; }
+.home-pick { max-width: 480px; margin: 0 auto; }
 
 #tabbar {
   position: fixed; bottom: 0; left: 0; right: 0;
@@ -290,8 +300,12 @@ textarea { resize: vertical; }
 .keyword-cloud { display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline; }
 .keyword { color: var(--accent); font-weight: 700; }
 
-/* 서재 */
-.book-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; }
+/* 서재: 포스트 목록(.entry-list)과 완전히 동일한 반응형 그리드 규칙을
+   따릅니다(좁은 화면 1열 → 화면이 넓어질수록 한 줄에 최대 4개까지). */
+.book-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+@media (min-width: 720px) { .book-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1040px) { .book-grid { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 1360px) { .book-grid { grid-template-columns: repeat(4, 1fr); } }
 .book-card {
   background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
   padding: 14px; text-align: left; cursor: pointer;
