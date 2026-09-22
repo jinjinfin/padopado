@@ -7,6 +7,7 @@ import * as retroUi from './ui/retro.js';
 import * as dashboardUi from './ui/dashboard.js';
 import * as settingsUi from './ui/settings.js';
 import { openCapture } from './ui/capture.js';
+import { withUnlock } from './ui/lock.js';
 import { isConfigured } from './config.js';
 
 const ROUTES = {
@@ -67,7 +68,7 @@ function renderShell() {
     <button type="button" id="fab" aria-label="새 기록">＋</button>
     <nav id="tabbar"></nav>
   `;
-  document.getElementById('fab').addEventListener('click', () => openCapture({ onSaved: () => {} }));
+  document.getElementById('fab').addEventListener('click', () => withUnlock(() => openCapture({ onSaved: () => {} })));
   window.addEventListener('hashchange', renderRoute);
   updateOfflineBadge();
   window.addEventListener('online', updateOfflineBadge);

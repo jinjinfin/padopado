@@ -6,6 +6,7 @@ import * as search from '../search.js';
 import { ENTRY_TYPES } from '../config.js';
 import { openCapture } from './capture.js';
 import { entryCard, wireEntryDelete, wireEntryEdit } from './shared.js';
+import { withUnlock } from './lock.js';
 
 const FEED_TYPES = ENTRY_TYPES.filter((t) => t.id !== 'retro');
 
@@ -112,5 +113,5 @@ function rerenderList(container) {
 }
 
 export function openQuickCapture() {
-  openCapture({});
+  withUnlock(() => openCapture({}));
 }

@@ -3,6 +3,7 @@
 import * as entries from '../entries.js';
 import { RETRO_PERIODS } from '../config.js';
 import { openCapture } from './capture.js';
+import { withUnlock } from './lock.js';
 import { escapeHtml, formatDate, wireEntryDelete, wireEntryEdit } from './shared.js';
 
 let unsub = null;
@@ -83,7 +84,7 @@ export function render(container) {
   `;
 
   container.querySelectorAll('.retro-start').forEach((btn) => {
-    btn.addEventListener('click', () => startRetro(container, btn.dataset.period));
+    btn.addEventListener('click', () => withUnlock(() => startRetro(container, btn.dataset.period)));
   });
 
   wireEntryDelete(container.querySelector('#retro-list'), entries);

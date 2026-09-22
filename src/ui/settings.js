@@ -13,14 +13,13 @@ import * as gh from '../github.js';
 import * as entriesMod from '../entries.js';
 import * as collectionsMod from '../collections.js';
 import * as push from '../push.js';
+import { isUnlocked, markUnlocked } from './lock.js';
 
-// 같은 페이지를 새로고침 없이 계속 쓰는 동안에는 다시 잠기지 않도록, 잠금 해제
-// 상태를 모듈 변수로만 기억합니다(저장소에는 안 남김). 앱을 완전히 새로
-// 열면(새로고침/재실행) 다시 잠긴 상태로 시작합니다.
-let unlockedThisSession = false;
-
+// 잠금 해제 상태는 lock.js가 앱 전체(설정 화면 + 글쓰기/수정/삭제)에서
+// 공통으로 관리합니다. 여기서 한 번 풀면 다른 곳에서도 다시 묻지 않고,
+// 반대로 글쓰기 쪽에서 먼저 풀었다면 설정 화면도 곧바로 열립니다.
 export function render(container) {
-  if (hasSettingsPin() && !unlockedThisSession) {
+  if (!isUnlocked()) {
     renderLock(container);
     return;
   }
@@ -45,7 +44,7 @@ function renderLock(container) {
     if (!pin) return;
     const ok = await verifySettingsPin(pin);
     if (ok) {
-      unlockedThisSession = true;
+      markUnlocked();
       renderSettings(container);
     } else {
       $('#settings-lock-status').textContent = '비밀번호가 맞지 않아요.';
@@ -197,7 +196,7 @@ function wireLockSettings(container) {
       return;
     }
     await setSettingsPin(pin);
-    unlockedThisSession = true; // 방금 내가 설정했으니 바로 다시 잠글 필요는 없음
+    markUnlocked(); // 방금 내가 설정했으니 바로 다시 잠글 필요는 없음
     renderSettings(container);
   });
   const clearBtn = $('#settings-pin-clear');
