@@ -3,49 +3,52 @@
 책 속 글귀, 강연/회의 인사이트, 웹 링크, 내 생각, 영화·드라마·유튜브, 정기 회고까지
 **하나의 흐름으로** 기록하고 검색할 수 있는 개인 아카이브 PWA입니다.
 
-아이폰과 맥북에서 모두 쓸 수 있고, 별도 서버 없이 **여러분의 GitHub 저장소를 데이터베이스처럼** 사용합니다.
+아이폰과 맥북에서 모두 쓸 수 있고, 별도 서버 없이 **GitHub 저장소를 데이터베이스처럼** 사용합니다.
 
-- 정적 파일은 GitHub Pages로 호스팅
-- 기록 데이터는 이 저장소의 `data/` 폴더에 JSON으로 저장 (GitHub API로 직접 읽고 씀)
+- 정적 파일(앱 화면)은 GitHub Pages로 호스팅 — 이건 **Public 저장소**여야 무료로 됩니다.
+- 실제 기록 데이터는 그것과는 **별도의 Private 저장소**에 JSON으로 저장 (GitHub API로 직접 읽고 씀)
 - 회고 알림(금요일/월말/분기말/연말)은 GitHub Actions의 예약 실행(cron)이 웹 푸시로 발송
 - 손글씨·인쇄물 사진 인식(OCR)은 브라우저 안에서 전부 처리 (Tesseract.js, 서버 불필요)
 
 즉, 이 앱을 위해 따로 결제하거나 운영해야 하는 서버가 없습니다.
 
+> 왜 저장소가 2개일까요? GitHub Free 요금제는 **Public 저장소에서만 Pages(사이트 호스팅)를 무료로 지원**합니다. 그런데 기록 데이터까지 그 저장소에 넣으면, Public 저장소 안 내용은 누구나 볼 수 있으니 개인 기록이 그대로 공개돼버려요. 그래서 앱 코드(공개돼도 상관없는 부분)는 Public 저장소에, 실제 기록은 Private 저장소에 나눠 담습니다. 매달 비용을 내고 싶다면 GitHub Pro 이상으로 올려서 저장소 하나만 Private으로 써도 됩니다.
+
 ---
 
-## 1. 저장소 만들고 배포하기
+## 1. 저장소 2개 만들고 배포하기
 
-1. GitHub에서 새 저장소를 만듭니다 (예: `my-jot`). **Private**로 만드는 걸 추천해요.
-2. 이 프로젝트 폴더의 내용을 그 저장소에 push 합니다.
+1. GitHub에서 새 저장소 2개를 만듭니다.
+   - 앱 코드용 (예: `padopado`) — **Public**
+   - 기록 데이터용 (예: `padopado-data`) — **Private**
+2. 이 프로젝트 폴더의 내용을 코드용 저장소에 push 합니다.
    ```bash
    cd 압축_푼_폴더
    git init
    git add .
    git commit -m "init: 파도파도"
    git branch -M main
-   git remote add origin https://github.com/<내계정>/my-jot.git
+   git remote add origin https://github.com/<내계정>/padopado.git
    git push -u origin main
    ```
-3. 저장소 **Settings → Pages** 에서:
+   (`.github/workflows/`가 포함되어 있으므로, push용 토큰에는 Contents 권한 외에 **Workflows: Read and write** 권한도 필요합니다.)
+3. 코드용 저장소 **Settings → Pages** 에서:
    - Source: `Deploy from a branch`
    - Branch: `main` / `/(root)`
-   - 저장하면 몇 분 안에 `https://<내계정>.github.io/my-jot/` 주소가 생깁니다.
+   - 저장하면 몇 분 안에 `https://<내계정>.github.io/padopado/` 주소가 생깁니다.
+4. 데이터용 저장소는 push할 파일이 없습니다 — GitHub에서 만들기만 하면 되고, 아래 2번의 토큰과 앱 설정 화면이 그 안에 `data/` 폴더를 알아서 만들어 씁니다.
 
-> Private 저장소도 GitHub Pages(무료 요금제 포함)로 배포할 수 있지만, **Pages로 나온 사이트 자체는 공개 URL**입니다.
-> 즉, 웹앱 화면은 링크를 아는 사람이 볼 수 있어요 (기록 데이터는 아래 2번의 토큰이 있어야 읽고 쓸 수 있으니, 화면 접근 ≠ 데이터 접근입니다). 더 엄격하게 막고 싶다면 GitHub Pages의 접근 제한(조직 Enterprise 플랜 기능) 또는 별도 인증 레이어가 필요한데, 이 프로젝트 범위에서는 다루지 않았습니다.
-
-## 2. GitHub 토큰 발급 (앱이 저장소에 쓰기 위해 필요)
+## 2. GitHub 토큰 발급 (앱이 데이터 저장소에 쓰기 위해 필요)
 
 1. GitHub → 우측 프로필 → **Settings → Developer settings → Personal access tokens → Fine-grained tokens → Generate new token**
-2. **Repository access**: 방금 만든 저장소만 선택 (전체 저장소 접근 금지)
+2. **Repository access**: **데이터용 저장소만** 선택 (코드용 저장소는 선택하지 않습니다 — 앱 런타임은 데이터 저장소만 건드리면 되니까요)
 3. **Permissions → Repository permissions → Contents**: `Read and write` 로 설정 (다른 권한은 전부 No access로 둬도 됩니다)
 4. 만료 기간을 설정하고 토큰을 생성 → 생성된 토큰 문자열을 복사해둡니다 (다시 볼 수 없어요)
 
 ## 3. 앱에서 연결하기
 
-1. 배포된 주소로 접속하면 처음에는 자동으로 **설정** 화면으로 이동합니다.
-2. GitHub 사용자명 / 저장소 이름 / 브랜치(`main`) / 방금 만든 토큰을 입력하고 저장
+1. 배포된 주소(코드용 저장소의 Pages 주소)로 접속하면 처음에는 자동으로 **설정** 화면으로 이동합니다.
+2. GitHub 사용자명 / **데이터용** 저장소 이름 / 브랜치(`main`) / 방금 만든 토큰을 입력하고 저장
 3. "연결 테스트"를 눌러 정상 연결을 확인합니다.
 4. 이제 홈 화면 오른쪽 아래 **+** 버튼으로 기록을 시작할 수 있어요.
 
@@ -58,8 +61,10 @@
 
 ## 4. 회고 알림 켜기 (선택, 무료)
 
-알림은 "이 기기가 알림을 받는다"는 정보를 저장소에 등록해두고,
-GitHub Actions가 정해진 시각에 그 기기로 웹 푸시를 보내는 방식입니다.
+알림은 "이 기기가 알림을 받는다"는 정보를 데이터용 저장소에 등록해두고,
+GitHub Actions(코드용 저장소에서 실행)가 정해진 시각에 그 기기로 웹 푸시를 보내는 방식입니다.
+워크플로가 코드 저장소와 데이터 저장소를 각각 체크아웃하므로, 데이터 저장소에 접근할
+토큰을 **별도로** 하나 더 등록해야 합니다.
 
 1. 로컬에서 (한 번만) VAPID 키를 생성합니다:
    ```bash
@@ -67,12 +72,16 @@ GitHub Actions가 정해진 시각에 그 기기로 웹 푸시를 보내는 방�
    npm run generate-vapid-keys
    ```
 2. 출력된 **Public Key**를 앱의 설정 화면 → "VAPID 공개키"에 입력하고 저장
-3. 저장소 **Settings → Secrets and variables → Actions → New repository secret** 에서 아래 3개를 등록:
-   - `VAPID_PUBLIC_KEY` = 위에서 나온 Public Key
-   - `VAPID_PRIVATE_KEY` = 위에서 나온 Private Key
-   - `VAPID_SUBJECT` = `mailto:jinryu@see-art.org` (본인 이메일)
-4. 앱을 홈 화면에 설치한 뒤, 설정 화면에서 **"알림 켜기"** 버튼을 눌러 알림 권한을 허용합니다.
-5. `.github/workflows/retro-reminders.yml` 이 매일 21:00(KST)에 실행되며, 그날이
+3. **데이터용 저장소**에 접근 가능한 Fine-grained 토큰을 하나 더 발급합니다 (2번 단계와 동일한 방법, Contents: Read and write). 이미 만들어둔 앱용 토큰을 그대로 재사용해도 됩니다.
+4. **코드용 저장소**(`padopado`) **Settings → Secrets and variables → Actions** 에서:
+   - **Variables 탭** → New repository variable: `DATA_REPO` = `<내계정>/padopado-data`
+   - **Secrets 탭** → New repository secret 으로 아래 4개를 등록:
+     - `DATA_REPO_TOKEN` = 위 3번에서 만든, 데이터 저장소용 토큰
+     - `VAPID_PUBLIC_KEY` = 위에서 나온 Public Key
+     - `VAPID_PRIVATE_KEY` = 위에서 나온 Private Key
+     - `VAPID_SUBJECT` = `mailto:jinryu@see-art.org` (본인 이메일)
+5. 앱을 홈 화면에 설치한 뒤, 설정 화면에서 **"알림 켜기"** 버튼을 눌러 알림 권한을 허용합니다.
+6. `.github/workflows/retro-reminders.yml` 이 매일 21:00(KST)에 실행되며, 그날이
    금요일 / 월말 / 분기말(3·6·9·12월 말) / 12월 31일 이면 알맞은 회고 알림을 보냅니다.
    Actions 탭에서 "회고 알림 발송" 워크플로를 **Run workflow**로 바로 테스트해볼 수 있어요.
 
@@ -111,13 +120,13 @@ src/                   앱 소스 (프레임워크 없는 순수 JS 모듈)
   stats.js             동기부여 통계 계산
   ui/                  화면별 렌더링
   vendor/              번들에 포함한 소규모 라이브러리(flexsearch, idb)
-data/                  실제 기록 데이터 (이 저장소 자체가 DB)
-  entries/YYYY.json     연도별 기록 파일
-  collections.json      컬렉션(책/영상 작품) 목록
-  meta/push-subscriptions.json  알림 구독 목록
 scripts/               GitHub Actions에서 실행되는 Node 스크립트
 .github/workflows/     회고 알림 예약 실행 설정
 ```
+
+실제 기록 데이터(`data/entries/YYYY.json`, `data/collections.json`, `data/meta/push-subscriptions.json`)는
+이 코드 저장소에는 없습니다 — 앱 설정 화면에 등록한 **별도의 Private 데이터 저장소**에
+GitHub API로 직접 생성/저장됩니다 (1장 참고).
 
 ## 8. 알려진 제약
 

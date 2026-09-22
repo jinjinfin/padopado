@@ -1,12 +1,16 @@
 // GitHub Actions 크론이 매일 실행하는 스크립트.
 // 오늘이 금요일/월말/분기말/연말인지 (한국 시간 기준) 확인해서, 해당하는 회고 알림을
-// data/meta/push-subscriptions.json 에 등록된 모든 기기로 웹 푸시 발송합니다.
-// 이 스크립트는 저장소 안에서 직접 실행되므로(actions/checkout) 파일을 그냥 읽고 씁니다.
+// push-subscriptions.json 에 등록된 모든 기기로 웹 푸시 발송합니다.
+//
+// 기록 데이터(구독 목록 포함)는 앱 코드와는 별도의 Private 저장소에 보관합니다
+// (코드 저장소는 GitHub Pages 때문에 Public이어야 하는데, 실제 기록까지 Public이면
+// 안 되니까요). 그래서 이 스크립트는 위치를 코드에 고정하지 않고 SUBS_PATH 환경변수로
+// 받습니다 (워크플로에서 데이터 저장소를 별도 경로에 체크아웃한 뒤 그 경로를 넘겨줍니다).
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import webpush from 'web-push';
 
-const SUBS_PATH = path.resolve('data/meta/push-subscriptions.json');
+const SUBS_PATH = path.resolve(process.env.SUBS_PATH || 'data/meta/push-subscriptions.json');
 
 function kstParts(date = new Date()) {
   const fmt = new Intl.DateTimeFormat('en-US', {
