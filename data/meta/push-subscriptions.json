@@ -1,1 +1,12 @@
-[]
+[
+  {
+    "endpoint": "https://fcm.googleapis.com/fcm/send/cBlTSE3sM9A:APA91bHwdzw9XY_o_C6u4BbHTCncULoFILwlbr-dOELWQdHj9HAcEbrWiUuLaGEPrMQ5Ex2iVwOMhp4MSuTCd7G-cRAJd7q5rVDnZidcU3Z0zJdonPMN-FBNGJqAut6FbmDMyUxReNuo",
+    "expirationTime": null,
+    "keys": {
+      "p256dh": "BEi2DPORQHKm527vD8tlNFUHvjP3zCGiA2_Mx7a9FI7IWNqvnvluXlov5wvPCLbLh_h7TL_MTp_Km9PF_ltz-Lo",
+      "auth": "eTtkCEVWVg8bkiT1r6uTMw"
+    },
+    "deviceLabel": "MacBook",
+    "addedAt": "2026-09-22T05:29:14.224Z"
+  }
+]
