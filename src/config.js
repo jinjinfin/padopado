@@ -8,6 +8,7 @@ export const LS_KEYS = {
   token: 'jot.gh.token',
   vapidPublicKey: 'jot.push.vapidPublicKey',
   lastSyncedYears: 'jot.sync.years',
+  settingsPinHash: 'jot.settings.pinHash',
 };
 
 // '회고'는 여기 없습니다 — 일반 작성 모달의 유형 선택지가 아니라, 회고 탭에서만
@@ -70,4 +71,34 @@ export function getRepoConfig() {
     branch: getSetting(LS_KEYS.branch) || 'main',
     token: getSetting(LS_KEYS.token),
   };
+}
+
+// 설정 화면 잠금: 같은 기기를 다른 사람도 쓸 수 있는 경우(가족 공용 컴퓨터,
+// 잠깐 빌려준 폰 등)를 위해, 설정 화면을 열 때 비밀번호를 요구할 수 있게 합니다.
+// 서버가 없는 앱이라 완벽한 보안은 아니고(기기 자체를 마음대로 조작할 수 있는
+// 사람은 우회할 수 있음), "같이 쓰는 사람이 실수로/무심코 GitHub 연결이나
+// 알림 설정을 건드리는 것"을 막는 정도의 가벼운 잠금입니다. 그래서 비밀번호를
+// 그대로 저장하지 않고 SHA-256 해시만 저장합니다.
+async function sha256Hex(text) {
+  const bytes = new TextEncoder().encode(text);
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+export function hasSettingsPin() {
+  return Boolean(getSetting(LS_KEYS.settingsPinHash));
+}
+
+export async function setSettingsPin(pin) {
+  setSetting(LS_KEYS.settingsPinHash, await sha256Hex(pin));
+}
+
+export function clearSettingsPin() {
+  setSetting(LS_KEYS.settingsPinHash, '');
+}
+
+export async function verifySettingsPin(pin) {
+  const stored = getSetting(LS_KEYS.settingsPinHash);
+  if (!stored) return true; // 아직 비밀번호를 설정한 적 없으면 잠겨있지 않은 상태
+  return (await sha256Hex(pin)) === stored;
 }

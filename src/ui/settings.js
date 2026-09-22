@@ -1,11 +1,65 @@
-// 설정: GitHub 저장소 연결, 알림(웹 푸시) 켜기/끄기, 동기화 상태.
-import { LS_KEYS, getSetting, setSetting, isConfigured } from '../config.js';
+// 설정: GitHub 저장소 연결, 알림(웹 푸시) 켜기/끄기, 동기화 상태, 화면 잠금.
+import {
+  LS_KEYS,
+  getSetting,
+  setSetting,
+  isConfigured,
+  hasSettingsPin,
+  setSettingsPin,
+  clearSettingsPin,
+  verifySettingsPin,
+} from '../config.js';
 import * as gh from '../github.js';
 import * as entriesMod from '../entries.js';
 import * as collectionsMod from '../collections.js';
 import * as push from '../push.js';
 
+// 같은 페이지를 새로고침 없이 계속 쓰는 동안에는 다시 잠기지 않도록, 잠금 해제
+// 상태를 모듈 변수로만 기억합니다(저장소에는 안 남김). 앱을 완전히 새로
+// 열면(새로고침/재실행) 다시 잠긴 상태로 시작합니다.
+let unlockedThisSession = false;
+
 export function render(container) {
+  if (hasSettingsPin() && !unlockedThisSession) {
+    renderLock(container);
+    return;
+  }
+  renderSettings(container);
+}
+
+function renderLock(container) {
+  container.innerHTML = `
+    <div class="view settings-view settings-lock-view">
+      <h1 class="view-title">⚙️ 설정</h1>
+      <p class="hint">이 화면은 비밀번호로 잠겨 있어요.</p>
+      <input type="password" id="settings-pin-input" placeholder="비밀번호" autocomplete="off" />
+      <div class="btn-row">
+        <button type="button" class="btn primary" id="settings-unlock">잠금 해제</button>
+      </div>
+      <div id="settings-lock-status" class="hint"></div>
+    </div>
+  `;
+  const $ = (s) => container.querySelector(s);
+  const tryUnlock = async () => {
+    const pin = $('#settings-pin-input').value;
+    if (!pin) return;
+    const ok = await verifySettingsPin(pin);
+    if (ok) {
+      unlockedThisSession = true;
+      renderSettings(container);
+    } else {
+      $('#settings-lock-status').textContent = '비밀번호가 맞지 않아요.';
+      $('#settings-pin-input').value = '';
+      $('#settings-pin-input').focus();
+    }
+  };
+  $('#settings-unlock').addEventListener('click', tryUnlock);
+  $('#settings-pin-input').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') tryUnlock();
+  });
+}
+
+function renderSettings(container) {
   container.innerHTML = `
     <div class="view settings-view">
       <h1 class="view-title">⚙️ 설정</h1>
@@ -41,12 +95,26 @@ export function render(container) {
         <div id="sync-status" class="hint"></div>
         <button type="button" class="btn secondary" id="sync-now">지금 동기화</button>
       </section>
+
+      <section class="settings-section">
+        <h2 class="section-title">🔒 설정 화면 잠금</h2>
+        <p class="hint">${hasSettingsPin()
+          ? '비밀번호가 설정되어 있어요. 이 기기를 다른 사람과 같이 쓰더라도, 이 설정 화면은 비밀번호를 입력해야 볼 수 있어요.'
+          : '이 기기를 다른 사람과 같이 쓴다면, 비밀번호를 설정해서 설정 화면을 보호할 수 있어요. (완벽한 보안은 아니고, 같이 쓰는 사람이 실수로 건드리는 걸 막는 정도예요.)'}</p>
+        <input type="password" id="settings-pin-new" placeholder="${hasSettingsPin() ? '새 비밀번호로 변경' : '설정할 비밀번호'}" autocomplete="off" />
+        <div class="btn-row">
+          <button type="button" class="btn primary" id="settings-pin-save">${hasSettingsPin() ? '비밀번호 변경' : '비밀번호 설정'}</button>
+          ${hasSettingsPin() ? '<button type="button" class="btn secondary" id="settings-pin-clear">잠금 끄기</button>' : ''}
+        </div>
+        <div id="settings-pin-status" class="hint"></div>
+      </section>
     </div>
   `;
 
   wireGithub(container);
   wirePush(container);
   wireSync(container);
+  wireLockSettings(container);
 }
 
 function wireGithub(container) {
@@ -118,6 +186,28 @@ function wireSync(container) {
       el.textContent = `동기화 실패: ${e.message}`;
     }
   });
+}
+
+function wireLockSettings(container) {
+  const $ = (s) => container.querySelector(s);
+  $('#settings-pin-save').addEventListener('click', async () => {
+    const pin = $('#settings-pin-new').value;
+    if (!pin || pin.length < 4) {
+      $('#settings-pin-status').textContent = '비밀번호는 4자리 이상으로 설정해주세요.';
+      return;
+    }
+    await setSettingsPin(pin);
+    unlockedThisSession = true; // 방금 내가 설정했으니 바로 다시 잠글 필요는 없음
+    renderSettings(container);
+  });
+  const clearBtn = $('#settings-pin-clear');
+  if (clearBtn) {
+    clearBtn.addEventListener('click', () => {
+      if (!window.confirm('설정 화면 잠금을 끌까요?')) return;
+      clearSettingsPin();
+      renderSettings(container);
+    });
+  }
 }
 
 function escapeAttr(s) {
