@@ -1,5 +1,5 @@
 // 서비스워커: 앱 셸 오프라인 캐시 + OCR 라이브러리(CDN) 런타임 캐시 + 푸시 알림 수신.
-const APP_CACHE = 'jot-app-v7';
+const APP_CACHE = 'jot-app-v8';
 const CDN_CACHE = 'jot-cdn-v1';
 
 const APP_SHELL = [

@@ -4,11 +4,18 @@ const TESS_VERSION = '5.1.1';
 const TESS_CDN = `https://cdn.jsdelivr.net/npm/tesseract.js@${TESS_VERSION}/dist/tesseract.esm.min.js`;
 
 let workerPromise = null;
+let loadAttempts = 0;
 
 async function getWorker(onProgress) {
   if (!workerPromise) {
+    const importUrl = loadAttempts === 0 ? TESS_CDN : `${TESS_CDN}?retry=${loadAttempts}`;
+    loadAttempts += 1;
     workerPromise = (async () => {
-      const { createWorker } = await import(/* webpackIgnore: true */ TESS_CDN);
+      const mod = await import(/* webpackIgnore: true */ importUrl);
+      const createWorker = mod.createWorker || mod.default?.createWorker;
+      if (!createWorker) {
+        throw new Error('OCR 라이브러리를 불러오지 못했어요. 인터넷 연결을 확인하고 다시 시도해주세요.');
+      }
       const worker = await createWorker('kor+eng', 1, {
         logger: (m) => {
           if (onProgress && m.status === 'recognizing text') {
@@ -18,16 +25,13 @@ async function getWorker(onProgress) {
       });
       return worker;
     })();
+    workerPromise.catch(() => {
+      workerPromise = null;
+    });
   }
   return workerPromise;
 }
 
-/**
- * 이미지(File/Blob/dataURL)에서 텍스트를 추출합니다.
- * @param {File|Blob|string} image
- * @param {(percent:number)=>void} onProgress
- * @returns {Promise<string>}
- */
 export async function recognizeText(image, onProgress) {
   const worker = await getWorker(onProgress);
   const { data } = await worker.recognize(image);
