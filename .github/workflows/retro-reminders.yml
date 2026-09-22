@@ -1,0 +1,41 @@
+name: 회고 알림 발송
+
+on:
+  schedule:
+    # 매일 12:00 UTC = 21:00 KST. 스크립트 내부에서 금요일/월말/분기말/연말 여부를 판단합니다.
+    - cron: '0 12 * * *'
+  workflow_dispatch: {} # 수동으로도 실행해서 테스트할 수 있게 합니다.
+
+permissions:
+  contents: write
+
+jobs:
+  send-reminders:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm install --omit=dev
+
+      - name: 알림 발송
+        env:
+          VAPID_PUBLIC_KEY: ${{ secrets.VAPID_PUBLIC_KEY }}
+          VAPID_PRIVATE_KEY: ${{ secrets.VAPID_PRIVATE_KEY }}
+          VAPID_SUBJECT: ${{ secrets.VAPID_SUBJECT }}
+        run: npm run reminders
+
+      - name: 만료된 구독 정리 커밋
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if ! git diff --quiet -- data/meta/push-subscriptions.json; then
+            git add data/meta/push-subscriptions.json
+            git commit -m "chore: 만료된 푸시 구독 정리"
+            git push
+          else
+            echo "변경 사항 없음"
+          fi
