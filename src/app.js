@@ -12,8 +12,9 @@ import { openCapture } from './ui/capture.js';
 import { renderViewer } from './ui/viewer.js';
 import { isConfigured, canWrite, setCanWrite } from './config.js';
 
-// 메인 화면(#/home)은 탭바의 5개 탭과 별개인 숨은 화면입니다. 헤더 로고를
-// 누르는 게 유일한 진입 경로라서, hidden: true로 표시해 탭바에는 안 그려집니다.
+// 메인 화면(#/home)은 앱을 열었을 때 가장 먼저 보이는 랜딩 페이지입니다.
+// 탭바의 5개 탭과는 별개라 hidden: true로 표시해 탭바에는 안 그려지고,
+// 헤더 로고를 눌러서 언제든 다시 돌아올 수 있습니다.
 const ROUTES = {
   '#/home': { render: homeUi.render, hidden: true },
   '#/': { render: feed.render, label: '영감', icon: '✨' },
@@ -26,7 +27,7 @@ const ROUTES = {
 let currentCleanup = null;
 
 function currentRoute() {
-  return ROUTES[location.hash] ? location.hash : '#/';
+  return ROUTES[location.hash] ? location.hash : '#/home';
 }
 
 // 공유 보기 링크(#/view/<슬러그>)는 일반 앱 화면(탭바/+ 버튼/설정)이 전혀
@@ -156,7 +157,7 @@ async function boot() {
   }
 
   renderShell();
-  if (!location.hash) location.hash = '#/';
+  if (!location.hash) location.hash = '#/home';
   if (!isConfigured()) {
     location.hash = '#/settings';
   }
