@@ -16,7 +16,6 @@ export function render(container) {
         <div class="home-wave" aria-hidden="true">🌊</div>
         <p class="home-message">오늘도 파도가 밀려와요</p>
       </div>
-      <h2 class="section-title">예전에 쓴 기록 한 조각</h2>
       <div id="home-pick" class="home-pick"></div>
     </div>
   `;
