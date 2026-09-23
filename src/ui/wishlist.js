@@ -11,9 +11,11 @@ const TYPE_MAP = new Map(WISHLIST_TYPES.map((t) => [t.id, t]));
 let unsub = null;
 let modalEl = null;
 let activeTypeFilter = null;
+let showArchive = false;
 
 export function render(container) {
   activeTypeFilter = null;
+  showArchive = false;
   renderList(container);
   unsub = wishlist.onChange(() => renderList(container));
   return () => {
@@ -31,10 +33,11 @@ function renderList(container) {
   container.innerHTML = `
     <div class="view book-view">
       <h1 class="view-title">⭐ 위시리스트</h1>
-      <p class="view-subtitle">나중에 보고 싶은 책·영화·드라마·영상·음악·글·장소·전시를 미리 담아두세요.</p>
+      <p class="view-subtitle">나중에 보고 싶은 책·영화·드라마·영상·음악·글·장소·전시를 미리 담아두세요. 다녀왔거나 봤으면 체크해서 아카이브로 옮겨두세요.</p>
       ${addBtn}
       ${items.length === 0 ? '' : `<div class="chip-row" id="wishlist-type-filters"></div>`}
       <div id="wishlist-grid"></div>
+      <div id="wishlist-archive-section"></div>
     </div>
   `;
 
@@ -68,26 +71,65 @@ function renderList(container) {
   renderGrid(container, items);
 }
 
+// 체크(다녀왔어요/봤어요)된 항목은 위쪽 목록에서 빠지고, 아래쪽 "다녀온 기록"
+// 아카이브 섹션(기본은 접힘 - 토글로 펼쳐서 봄)으로 옮겨갑니다.
 function renderGrid(container, items) {
   const gridEl = container.querySelector('#wishlist-grid');
-  if (!gridEl) return;
-  const list = activeTypeFilter ? items.filter((it) => it.type === activeTypeFilter) : items;
+  const archiveSectionEl = container.querySelector('#wishlist-archive-section');
+  if (!gridEl || !archiveSectionEl) return;
+
+  const filtered = activeTypeFilter ? items.filter((it) => it.type === activeTypeFilter) : items;
+  const active = filtered.filter((it) => !it.visited);
+  const archived = filtered.filter((it) => it.visited);
 
   if (items.length === 0) {
     gridEl.innerHTML = `<div class="empty-state">아직 담아둔 항목이 없어요.${canWrite() ? ' 위의 버튼으로 추가해보세요.' : ''}</div>`;
+    archiveSectionEl.innerHTML = '';
     return;
   }
-  if (list.length === 0) {
-    gridEl.innerHTML = `<div class="empty-state">이 유형으로 담아둔 항목이 없어요.</div>`;
-    return;
-  }
-  gridEl.innerHTML = `<div class="book-grid">${list.map(itemCardHtml).join('')}</div>`;
 
-  gridEl.querySelectorAll('.wishlist-delete').forEach((btn) => {
+  if (active.length === 0) {
+    const msg = archived.length > 0
+      ? '이 조건에서는 모두 체크 완료됐어요. 아래 다녀온 기록에서 확인해보세요.'
+      : (activeTypeFilter ? '이 유형으로 담아둔 항목이 없어요.' : '아직 담아둔 항목이 없어요.');
+    gridEl.innerHTML = `<div class="empty-state">${msg}</div>`;
+  } else {
+    gridEl.innerHTML = `<div class="book-grid">${active.map(itemCardHtml).join('')}</div>`;
+  }
+
+  archiveSectionEl.innerHTML = archived.length === 0
+    ? ''
+    : `
+      <button type="button" class="btn secondary" id="wishlist-archive-toggle"></button>
+      <div id="wishlist-archive-grid" class="book-grid" style="margin-top:12px; display:${showArchive ? 'grid' : 'none'}">
+        ${archived.map(itemCardHtml).join('')}
+      </div>
+    `;
+
+  const archiveToggleEl = container.querySelector('#wishlist-archive-toggle');
+  if (archiveToggleEl) {
+    archiveToggleEl.textContent = `🗄 다녀온 기록 ${showArchive ? '접기' : '보기'} (${archived.length}개)`;
+    archiveToggleEl.addEventListener('click', () => {
+      showArchive = !showArchive;
+      renderGrid(container, items);
+    });
+  }
+
+  wireCardEvents(gridEl);
+  wireCardEvents(archiveSectionEl);
+}
+
+function wireCardEvents(el) {
+  el.querySelectorAll('.wishlist-delete').forEach((btn) => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       if (!window.confirm('이 항목을 위시리스트에서 지울까요?')) return;
       wishlist.deleteItem(btn.dataset.id);
+    });
+  });
+  el.querySelectorAll('.wishlist-visited-checkbox').forEach((cb) => {
+    cb.addEventListener('change', () => {
+      wishlist.setVisited(cb.dataset.id, cb.checked);
     });
   });
 }
@@ -97,12 +139,18 @@ function itemCardHtml(item) {
   const deleteBtn = canWrite()
     ? `<button type="button" class="entry-delete wishlist-delete" data-id="${item.id}" aria-label="삭제">✕</button>`
     : '';
+  const checkbox = canWrite()
+    ? `<label class="finish-toggle">
+        <input type="checkbox" class="wishlist-visited-checkbox" data-id="${item.id}" ${item.visited ? 'checked' : ''}/> ${typeInfo.doneLabel || '완료로 표시'}
+      </label>`
+    : '';
   return `
     <div class="book-card wishlist-card">
       ${deleteBtn}
       <div class="book-cover">${typeInfo.emoji}</div>
       <div class="book-title">${escapeHtml(item.title)}</div>
       ${item.artist ? `<div class="book-author">${escapeHtml(item.artist)}</div>` : ''}
+      ${checkbox}
     </div>
   `;
 }

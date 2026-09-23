@@ -135,14 +135,19 @@ body {
 
 /* 포스트/서재 목록이 있는 화면(영감/회고/컬렉션 목록·상세)은 화면이 넓어질수록
    한 줄에 더 많은 카드를 볼 수 있도록 컨테이너 자체도 함께 넓어집니다(최대 4열까지). */
+/* #wishlist-grid도 함께 걸어둡니다 - 위시리스트에서 항목이 없는 유형을 골랐을 때는
+   .book-grid 대신 .empty-state만 그려지는데, :has(.book-grid)만 걸려있으면 그 순간
+   #view-root가 좁은 기본 폭으로 되돌아가서 화면이 가운데로 좁게 쏠려 보였습니다.
+   #wishlist-grid는 위시리스트 화면에 항목 유무와 상관없이 항상 있는 컨테이너라
+   이 문제 없이 항상 같은 폭을 유지합니다. */
 @media (min-width: 720px) {
-  #view-root:has(.entry-list), #view-root:has(.book-grid) { max-width: 900px; }
+  #view-root:has(.entry-list), #view-root:has(.book-grid), #view-root:has(#wishlist-grid) { max-width: 900px; }
 }
 @media (min-width: 1040px) {
-  #view-root:has(.entry-list), #view-root:has(.book-grid) { max-width: 1200px; }
+  #view-root:has(.entry-list), #view-root:has(.book-grid), #view-root:has(#wishlist-grid) { max-width: 1200px; }
 }
 @media (min-width: 1360px) {
-  #view-root:has(.entry-list), #view-root:has(.book-grid) { max-width: 1400px; }
+  #view-root:has(.entry-list), #view-root:has(.book-grid), #view-root:has(#wishlist-grid) { max-width: 1400px; }
 }
 
 .view-title { font-size: 22px; margin: 8px 0 2px; }
@@ -332,7 +337,9 @@ textarea { resize: vertical; }
    없으므로 커서를 기본으로 되돌리고 카드 안에 삭제(✕) 버튼을 얹습니다. */
 .wishlist-card { position: relative; cursor: default; }
 .wishlist-card .wishlist-delete { position: absolute; top: 8px; right: 8px; }
+.wishlist-card .finish-toggle { margin: 8px 0 0; font-size: 12.5px; }
 #wishlist-add-btn { margin-bottom: 14px; }
+#wishlist-archive-toggle { margin-top: 4px; }
 .finish-toggle { display: flex; align-items: center; gap: 6px; font-size: 14px; margin: 8px 0 14px; }
 
 .retro-buttons { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }

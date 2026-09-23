@@ -64,6 +64,25 @@ export async function createItem({ title, artist = '', type }) {
   return item;
 }
 
+// "다녀왔어요/봤어요" 체크. 체크되면 이 항목은 목록 화면에서 아래쪽 "다녀온
+// 기록" 아카이브로 옮겨집니다. visitedAt은 체크한 시각으로, GitHub Actions 알림
+// 스크립트가 "체크한 지 1주일이 지나도 영감 탭에 관련 기록이 없으면" 판단하는
+// 기준점으로 씁니다. 체크를 다시 풀거나 재체크하면 그 알림 전송 여부(visitedReminderSentAt)도
+// 함께 초기화해서, 다음 번엔 새로 1주일을 기준으로 다시 판단하게 합니다.
+export async function setVisited(id, visited) {
+  const patch = {
+    visited,
+    visitedAt: visited ? new Date().toISOString() : null,
+    visitedReminderSentAt: null,
+  };
+  memoryItems = memoryItems.map((it) => (it.id === id ? { ...it, ...patch } : it));
+  const updated = memoryItems.find((it) => it.id === id);
+  await db.putWishlistItem(updated);
+  notify();
+  pushRemote();
+  return updated;
+}
+
 export async function deleteItem(id) {
   memoryItems = memoryItems.filter((it) => it.id !== id);
   await db.deleteWishlistItemLocal(id);

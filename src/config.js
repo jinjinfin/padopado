@@ -30,14 +30,14 @@ export const ENTRY_TYPES = [
 // 컬렉션과 달리 실제 기록(글)과는 연결되지 않고, 제목과 (선택) 아티스트만
 // 가진 독립적인 항목입니다. 장소는 아티스트 칸에 건축가·디자이너를 적어도 됩니다.
 export const WISHLIST_TYPES = [
-  { id: 'book', label: '책', emoji: '📖' },
-  { id: 'movie', label: '영화', emoji: '🎬' },
-  { id: 'drama', label: '드라마', emoji: '📺' },
-  { id: 'video', label: '영상', emoji: '🎥' },
-  { id: 'music', label: '음악', emoji: '🎵' },
-  { id: 'writing', label: '글', emoji: '✍️' },
-  { id: 'place', label: '장소', emoji: '📍' },
-  { id: 'exhibition', label: '전시', emoji: '🖼️' },
+  { id: 'book', label: '책', emoji: '📖', doneLabel: '다 읽었어요' },
+  { id: 'movie', label: '영화', emoji: '🎬', doneLabel: '다 봤어요' },
+  { id: 'drama', label: '드라마', emoji: '📺', doneLabel: '다 봤어요' },
+  { id: 'video', label: '영상', emoji: '🎥', doneLabel: '다 봤어요' },
+  { id: 'music', label: '음악', emoji: '🎵', doneLabel: '다 들었어요' },
+  { id: 'writing', label: '글', emoji: '✍️', doneLabel: '다 읽었어요' },
+  { id: 'place', label: '장소', emoji: '📍', doneLabel: '다녀왔어요' },
+  { id: 'exhibition', label: '전시', emoji: '🖼️', doneLabel: '다녀왔어요' },
 ];
 
 export const RETRO_PERIODS = [

@@ -5,20 +5,25 @@
 //    붙은 항목이 있으면, "OO 아직 보고 있나요?" 알림을 보냅니다. 같은 항목을 매일
 //    반복해서 알리지 않도록, 한 번 알린 뒤에는 그 항목에 새 기록이 다시 붙기 전까지는
 //    조용히 있습니다(마음이 없어서 30일이 지나 있어도 스팸처럼 매일 오지 않게).
+// 3) 위시리스트에서 "다녀왔어요/봤어요"로 체크된 항목 중, 체크한 지 7일이 지났는데도
+//    영감 탭에 그 제목으로 된 새 기록이 하나도 없으면 "OO 어떠셨나요?" 알림을 보냅니다.
+//    (2번과 마찬가지로 한 번 알리면 재체크하기 전까지는 반복하지 않습니다.)
 //
-// 기록 데이터(구독 목록, 컬렉션, 기록 모두)는 앱 코드와는 별도의 Private 저장소에
-// 보관합니다 (코드 저장소는 GitHub Pages 때문에 Public이어야 하는데, 실제 기록까지
-// Public이면 안 되니까요). 그래서 이 스크립트는 위치를 코드에 고정하지 않고
-// SUBS_PATH / COLLECTIONS_PATH / ENTRIES_DIR 환경변수로 받습니다 (워크플로에서
-// 데이터 저장소를 별도 경로에 체크아웃한 뒤 그 경로를 넘겨줍니다).
+// 기록 데이터(구독 목록, 컬렉션, 위시리스트, 기록 모두)는 앱 코드와는 별도의 Private
+// 저장소에 보관합니다 (코드 저장소는 GitHub Pages 때문에 Public이어야 하는데, 실제
+// 기록까지 Public이면 안 되니까요). 그래서 이 스크립트는 위치를 코드에 고정하지 않고
+// SUBS_PATH / COLLECTIONS_PATH / WISHLIST_PATH / ENTRIES_DIR 환경변수로 받습니다
+// (워크플로에서 데이터 저장소를 별도 경로에 체크아웃한 뒤 그 경로를 넘겨줍니다).
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import webpush from 'web-push';
 
 const SUBS_PATH = path.resolve(process.env.SUBS_PATH || 'data/meta/push-subscriptions.json');
 const COLLECTIONS_PATH = path.resolve(process.env.COLLECTIONS_PATH || 'data/collections.json');
+const WISHLIST_PATH = path.resolve(process.env.WISHLIST_PATH || 'data/wishlist.json');
 const ENTRIES_DIR = path.resolve(process.env.ENTRIES_DIR || 'data/entries');
 const STALE_COLLECTION_DAYS = 30;
+const STALE_WISHLIST_DAYS = 7;
 
 function kstParts(date = new Date()) {
   const fmt = new Intl.DateTimeFormat('en-US', {
@@ -96,6 +101,17 @@ async function loadCollections() {
   }
 }
 
+async function loadWishlist() {
+  try {
+    const raw = await fs.readFile(WISHLIST_PATH, 'utf-8');
+    const data = JSON.parse(raw);
+    return Array.isArray(data) ? data : [];
+  } catch (e) {
+    if (e.code === 'ENOENT') return [];
+    throw e;
+  }
+}
+
 async function loadAllEntries() {
   let files;
   try {
@@ -161,6 +177,51 @@ function staleReminderFor(item) {
   };
 }
 
+/**
+ * 위시리스트에서 "다녀왔어요/봤어요"로 체크됐는데, 체크한 시점(visitedAt) 이후로
+ * 영감 탭에 그 제목(source)으로 된 새 기록이 하나도 없는 채로 7일이 지난 항목을
+ * 찾습니다. 제목 매칭은 컬렉션 자동 연결과 같은 방식(대소문자/공백 무시한 정확
+ * 일치)이라, 기록의 출처란에 위시리스트와 똑같은 제목을 적어야 "글을 남겼다"고
+ * 인식합니다. 이미 알림을 보낸 적이 있는데 그 이후로 관련 기록이 여전히 없다면,
+ * 매일 반복해서 알리지 않도록 건너뜁니다(체크를 다시 하기 전까지는 조용히 있음).
+ */
+function findStaleVisitedWishlistItems(items, entries) {
+  const norm = (s) => (s || '').trim().toLowerCase();
+  const lastActivityByTitle = new Map();
+  for (const e of entries) {
+    const key = norm(e.source);
+    if (!key) continue;
+    const t = new Date(e.createdAt).getTime();
+    if (Number.isNaN(t)) continue;
+    const prev = lastActivityByTitle.get(key);
+    if (prev === undefined || t > prev) lastActivityByTitle.set(key, t);
+  }
+
+  const now = Date.now();
+  const stale = [];
+  for (const item of items) {
+    if (!item.visited) continue;
+    const visitedAt = new Date(item.visitedAt || item.createdAt).getTime();
+    if (Number.isNaN(visitedAt)) continue;
+    const lastActivity = lastActivityByTitle.get(norm(item.title));
+    if (lastActivity !== undefined && lastActivity > visitedAt) continue; // 체크 이후 이미 글을 남겼음
+    const daysSince = (now - visitedAt) / (1000 * 60 * 60 * 24);
+    if (daysSince < STALE_WISHLIST_DAYS) continue;
+    const notifiedAt = item.visitedReminderSentAt ? new Date(item.visitedReminderSentAt).getTime() : null;
+    if (notifiedAt !== null && notifiedAt >= visitedAt) continue; // 이미 이 체크에 대해 알렸음
+    stale.push(item);
+  }
+  return stale;
+}
+
+function visitedReminderFor(item) {
+  return {
+    title: `⭐ "${item.title}" 어떠셨나요?`,
+    body: '위시리스트에서 체크했는데, 영감 탭에 아직 기록을 남기지 않으셨네요.',
+    url: './index.html#/',
+  };
+}
+
 async function main() {
   const { VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT } = process.env;
   if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
@@ -169,9 +230,16 @@ async function main() {
   }
   const reminders = buildTodaysReminders();
 
-  const [collectionsData, entriesData] = await Promise.all([loadCollections(), loadAllEntries()]);
+  const [collectionsData, wishlistData, entriesData] = await Promise.all([
+    loadCollections(),
+    loadWishlist(),
+    loadAllEntries(),
+  ]);
   const staleItems = findStaleCollectionItems(collectionsData, entriesData);
   for (const item of staleItems) reminders.push(staleReminderFor(item));
+
+  const staleWishlistItems = findStaleVisitedWishlistItems(wishlistData, entriesData);
+  for (const item of staleWishlistItems) reminders.push(visitedReminderFor(item));
 
   if (reminders.length === 0) {
     console.log('오늘은 보낼 알림이 없습니다.');
@@ -219,6 +287,18 @@ async function main() {
     await fs.writeFile(COLLECTIONS_PATH, JSON.stringify(updatedCollections, null, 2) + '\n', 'utf-8');
     console.log(`오래 멈춰있는 컬렉션 항목 ${staleItems.length}개에 알림을 보냈습니다.`);
   }
+
+  // 방금 "어떠셨나요?" 알림을 보낸 위시리스트 항목들도, 재체크하기 전까지는
+  // 내일 또 알리지 않도록 표시해서 데이터 저장소에 저장합니다.
+  if (staleWishlistItems.length > 0) {
+    const notifiedIds = new Set(staleWishlistItems.map((it) => it.id));
+    const now = new Date().toISOString();
+    const updatedWishlist = wishlistData.map((it) =>
+      notifiedIds.has(it.id) ? { ...it, visitedReminderSentAt: now } : it
+    );
+    await fs.writeFile(WISHLIST_PATH, JSON.stringify(updatedWishlist, null, 2) + '\n', 'utf-8');
+    console.log(`체크 후 조용한 위시리스트 항목 ${staleWishlistItems.length}개에 알림을 보냈습니다.`);
+  }
 }
 
 // `node scripts/send-reminders.mjs`(또는 npm run reminders)로 직접 실행했을 때만
@@ -231,4 +311,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   });
 }
 
-export { buildTodaysReminders, findStaleCollectionItems, staleReminderFor };
+export {
+  buildTodaysReminders,
+  findStaleCollectionItems,
+  staleReminderFor,
+  findStaleVisitedWishlistItems,
+  visitedReminderFor,
+};
