@@ -2,6 +2,7 @@
 // 모든 기록 유형(글귀/인사이트/링크/생각/영상/회고)은 같은 구조를 공유합니다.
 import * as db from './db.js';
 import * as gh from './github.js';
+import * as collections from './collections.js';
 import { DATA_PATHS, isConfigured } from './config.js';
 
 let memoryEntries = []; // 최신순 정렬 캐시
@@ -118,6 +119,20 @@ export async function deleteEntry(id) {
   pendingDeletes.push({ id, year: entry.year });
   await db.kvSet('pendingDeletes', pendingDeletes);
   queueSync();
+
+  // 이 기록이 컬렉션(책/영상/음악 등) 항목과 연결되어 있었는데, 그 항목에 연결된
+  // 다른 기록이 더 이상 하나도 안 남았다면 컬렉션에서도 함께 지웁니다. 아직 다른
+  // 글이 남아있으면(같은 책/앨범의 다른 글귀 등) 항목은 그대로 컬렉션에 남습니다.
+  if (entry.collectionId) {
+    const stillLinked = memoryEntries.some((e) => e.collectionId === entry.collectionId);
+    if (!stillLinked) {
+      try {
+        await collections.deleteItem(entry.collectionId);
+      } catch (e) {
+        console.warn('컬렉션 항목 정리 실패:', e.message);
+      }
+    }
+  }
 }
 
 function queueSync() {

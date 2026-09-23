@@ -97,6 +97,30 @@ export function computeMilestones(entries) {
 
 const STOPWORDS = new Set(['그리고', '그런데', '하지만', '그래서', '이것', '저것', '것은', '것을', '나는', '내가', 'the', 'and', 'this', 'that', 'for', 'with']);
 
+// 아주 간단한 조사 제거: 진짜 형태소 분석기 없이도, 자주 붙는 조사(은/는/이/가/을/를/
+// 에서/으로/이라고 등)를 알려진 목록으로 하나 떼어냅니다. 그래야 "여행을"·"여행은"·
+// "여행에서"가 전부 그냥 "여행"이라는 같은 키워드로 합쳐집니다 — 조사가 붙은 채로
+// 어절 그대로 세면 같은 단어인데도 매번 다른 키워드처럼 따로 집계되거든요.
+// 완벽하진 않습니다(드물게 "사진가"처럼 우연히 조사와 같은 글자로 끝나는 단어가
+// 잘못 잘릴 수 있음) — 하지만 일기 키워드 뽑기엔 이 정도로도 훨씬 깔끔해집니다.
+const JOSA_SUFFIXES = [
+  '으로부터', '에서부터', '에게서', '한테서',
+  '이라고', '이라는', '이지만', '이니까', '으로는', '에서는', '에게는', '한테는',
+  '라고', '라는', '지만', '니까',
+  '으로', '에서', '에게', '한테', '까지', '부터', '이나', '이랑', '보다', '처럼', '만큼',
+  '와', '과', '도', '만', '뿐', '나', '랑', '께',
+  '은', '는', '이', '가', '을', '를', '의', '에',
+].sort((a, b) => b.length - a.length);
+
+function stripJosa(word) {
+  for (const suf of JOSA_SUFFIXES) {
+    if (word.length > suf.length && word.endsWith(suf)) {
+      return word.slice(0, -suf.length);
+    }
+  }
+  return word;
+}
+
 export function computeKeywordFrequency(entries, { since = null, limit = 12 } = {}) {
   const freq = new Map();
   for (const e of entries) {
@@ -105,6 +129,8 @@ export function computeKeywordFrequency(entries, { since = null, limit = 12 } = 
       .normalize('NFKC')
       .split(/[^\p{L}\p{N}]+/u)
       .map((w) => w.trim())
+      .filter(Boolean)
+      .map(stripJosa)
       .filter((w) => w.length >= 2 && !STOPWORDS.has(w.toLowerCase()));
     for (const w of words) {
       freq.set(w, (freq.get(w) || 0) + 1);

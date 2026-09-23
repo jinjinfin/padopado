@@ -76,6 +76,11 @@ export async function getAllCollectionItems() {
   return db.getAll('collections');
 }
 
+export async function deleteCollectionItemLocal(id) {
+  const db = await getDB();
+  await db.delete('collections', id);
+}
+
 export async function kvGet(key) {
   const db = await getDB();
   return db.get('kv', key);

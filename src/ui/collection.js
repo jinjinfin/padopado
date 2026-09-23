@@ -1,5 +1,6 @@
-// 컬렉션: 책, 영화·드라마 등 "작품" 단위로 쌓이는 아카이브.
-// 글귀를 기록하며 책 제목을 남기거나, 영상/작품을 기록하며 작품명을 남기면 자동으로 여기 쌓입니다.
+// 컬렉션: 책, 영화·드라마, 음악 등 "작품" 단위로 쌓이는 아카이브.
+// 글귀를 기록하며 책 제목을, 영상/작품을 기록하며 작품명을, 음악을 기록하며
+// 앨범·곡 제목을 남기면 자동으로 여기 쌓입니다.
 import * as collections from '../collections.js';
 import * as entries from '../entries.js';
 import { COLLECTION_KINDS, canWrite } from '../config.js';
@@ -33,6 +34,7 @@ function renderList(container) {
 
   const books = items.filter((it) => it.kind === 'book');
   const media = items.filter((it) => it.kind === 'media');
+  const music = items.filter((it) => it.kind === 'music');
 
   const section = (title, list) =>
     list.length === 0
@@ -45,11 +47,11 @@ function renderList(container) {
   container.innerHTML = `
     <div class="view book-view">
       <h1 class="view-title">🗃️ 컬렉션</h1>
-      <p class="view-subtitle">글귀를 남긴 책, 기록한 영화·드라마가 작품 단위로 자동으로 쌓여요.</p>
+      <p class="view-subtitle">글귀를 남긴 책, 기록한 영화·드라마·음악이 작품 단위로 자동으로 쌓여요.</p>
       ${
         items.length === 0
-          ? `<div class="empty-state">아직 등록된 항목이 없어요. 영감 탭 + 버튼에서 "글귀"나 "영상/작품"을 고르고, 출처에 책·영상 제목을 적으면 자동으로 여기에 쌓여요.</div>`
-          : `${section('📖 책', books)}${section('🎬 영화·드라마', media)}`
+          ? `<div class="empty-state">아직 등록된 항목이 없어요. 영감 탭 + 버튼에서 "글귀"·"영상/작품"·"음악"을 고르고, 출처에 책·영상·앨범 제목을 적으면 자동으로 여기에 쌓여요.</div>`
+          : `${section('📖 책', books)}${section('🎬 영화·드라마', media)}${section('🎵 음악', music)}`
       }
     </div>
   `;

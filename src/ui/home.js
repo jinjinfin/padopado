@@ -4,7 +4,7 @@
 import * as entries from '../entries.js';
 import * as collections from '../collections.js';
 import * as stats from '../stats.js';
-import { entryCard, wireEntryDelete, wireEntryEdit, wireContentToggle, applyContentClamp } from './shared.js';
+import { entryCard, wireEntryDelete, wireEntryEdit, wireContentToggle, applyContentClamp, wireLinkToggle } from './shared.js';
 import { openCapture } from './capture.js';
 
 let unsub = null;
@@ -28,6 +28,7 @@ export function render(container) {
     openCapture({ editEntry: entry });
   });
   wireContentToggle(pickEl);
+  wireLinkToggle(pickEl);
 
   paint(container);
   unsub = entries.onChange(() => paint(container));

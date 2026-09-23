@@ -23,6 +23,7 @@ export const ENTRY_TYPES = [
   { id: 'thought', label: '생각', emoji: '✍️', hint: '지금 떠오른 내 생각' },
   { id: 'media', label: '영상/작품', emoji: '🎬', hint: '영화·드라마·유튜브' },
   { id: 'word', label: '단어', emoji: '🔤', hint: '새로 알게 된 단어와 뜻' },
+  { id: 'music', label: '음악', emoji: '🎵', hint: '요즘 듣는 노래·앨범' },
 ];
 
 export const RETRO_PERIODS = [
@@ -37,11 +38,13 @@ export const RETRO_PERIODS = [
 export const TYPE_TO_COLLECTION_KIND = {
   quote: 'book',
   media: 'media',
+  music: 'music',
 };
 
 export const COLLECTION_KINDS = {
   book: { label: '책', icon: '📖', doneIcon: '✅', doneLabel: '완독으로 표시', titlePlaceholder: '책 제목을 입력하면 자동으로 컬렉션에 쌓여요' },
   media: { label: '작품', icon: '🎬', doneIcon: '✅', doneLabel: '다 봤어요로 표시', titlePlaceholder: '영화·드라마 제목을 입력하면 자동으로 컬렉션에 쌓여요' },
+  music: { label: '음악', icon: '🎵', doneIcon: '✅', doneLabel: '다 들었어요로 표시', titlePlaceholder: '앨범·곡 제목을 입력하면 자동으로 컬렉션에 쌓여요' },
 };
 
 export const DATA_PATHS = {

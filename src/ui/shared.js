@@ -47,9 +47,7 @@ export function entryCard(entry, collectionsById = new Map()) {
   const collectionItem = entry.collectionId ? collectionsById.get(entry.collectionId) : null;
   const sourceLine = [entry.source || (collectionItem ? collectionItem.title : ''), entry.author].filter(Boolean).join(' · ');
   const tags = (entry.tags || []).map((t) => `<span class="tag">#${escapeHtml(t)}</span>`).join(' ');
-  const linkLine = entry.url
-    ? `<a href="${escapeHtml(entry.url)}" target="_blank" rel="noopener" class="entry-link">${escapeHtml(entry.url)}</a>`
-    : '';
+  const linkBlock = linkBlockHtml(entry.url);
   const pendingBadge = entry.syncStatus === 'pending' ? '<span class="pending-dot" title="동기화 대기 중">●</span>' : '';
   // 읽기 전용 연결(다른 사람에게 "보기 전용"으로 나눠준 토큰)이면 수정/삭제
   // 버튼 자체를 안 보여줍니다 — 어차피 GitHub이 저장을 거부할 텐데, 눌러봤다가
@@ -70,10 +68,28 @@ export function entryCard(entry, collectionsById = new Map()) {
       </div>
       ${sourceLine ? `<div class="entry-source">${escapeHtml(sourceLine)}</div>` : ''}
       ${contentBlockHtml(entry.content)}
-      ${linkLine}
+      ${linkBlock}
       ${tags ? `<div class="entry-tags">${tags}</div>` : ''}
     </article>
   `;
+}
+
+// 링크는 목록에서 바로 노출하지 않고, "🔗 링크 보기" 버튼을 눌러야 펼쳐지도록
+// 합니다(카드 목록이 URL로 지저분해지지 않도록). wireLinkToggle()로 클릭을 처리합니다.
+function linkBlockHtml(url) {
+  if (!url) return '';
+  return `<button type="button" class="link-toggle">🔗 링크 보기</button><a href="${escapeHtml(url)}" target="_blank" rel="noopener" class="entry-link link-hidden">${escapeHtml(url)}</a>`;
+}
+
+export function wireLinkToggle(container) {
+  container.addEventListener('click', (e) => {
+    const btn = e.target.closest('.link-toggle');
+    if (!btn) return;
+    const linkEl = btn.nextElementSibling;
+    if (!linkEl || !linkEl.classList.contains('entry-link')) return;
+    const nowHidden = linkEl.classList.toggle('link-hidden');
+    btn.textContent = nowHidden ? '🔗 링크 보기' : '🔗 링크 숨기기';
+  });
 }
 
 // 긴 글은 5줄까지만 보이고, 나머지는 "더 보기" 토글로 펼쳐볼 수 있게 합니다.

@@ -94,19 +94,35 @@ export async function updateItem(id, patch) {
   return updated;
 }
 
+// 이 컬렉션 항목을 완전히 지웁니다. entries.js가 "이 항목에 연결된 기록이
+// 더 이상 하나도 안 남았을 때"(마지막으로 연결된 글을 지웠을 때) 자동으로
+// 호출합니다 — 글이 다 지워졌는데 빈 책/작품 카드만 컬렉션에 남아있지 않도록.
+export async function deleteItem(id) {
+  memoryItems = memoryItems.filter((it) => it.id !== id);
+  await db.deleteCollectionItemLocal(id);
+  notify();
+  const pendingDeletes = (await db.kvGet('pendingCollectionDeletes')) || [];
+  if (!pendingDeletes.includes(id)) pendingDeletes.push(id);
+  await db.kvSet('pendingCollectionDeletes', pendingDeletes);
+  await pushRemote();
+}
+
 async function pushRemote() {
   if (!isConfigured() || !navigator.onLine) return;
   try {
+    const pendingDeletes = (await db.kvGet('pendingCollectionDeletes')) || [];
     await gh.putJSONFile(
       DATA_PATHS.collections,
       (current) => {
         const arr = Array.isArray(current) ? current : [];
         const byId = new Map(arr.map((it) => [it.id, it]));
+        for (const id of pendingDeletes) byId.delete(id);
         for (const it of memoryItems) byId.set(it.id, it);
         return Array.from(byId.values());
       },
-      `collections: ${memoryItems.length}개 항목 업데이트`
+      `collections: ${memoryItems.length}개 항목 업데이트${pendingDeletes.length ? `, ${pendingDeletes.length}개 삭제` : ''}`
     );
+    if (pendingDeletes.length) await db.kvSet('pendingCollectionDeletes', []);
   } catch (e) {
     console.warn('컬렉션 저장 실패(다음 동기화 때 재시도):', e.message);
   }
