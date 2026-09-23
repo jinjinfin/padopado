@@ -1,5 +1,5 @@
 // 서비스워커: 앱 셸 오프라인 캐시 + OCR 라이브러리(CDN) 런타임 캐시 + 푸시 알림 수신.
-const APP_CACHE = 'jot-app-v26';
+const APP_CACHE = 'jot-app-v27';
 const CDN_CACHE = 'jot-cdn-v1';
 
 const APP_SHELL = [
@@ -13,6 +13,7 @@ const APP_SHELL = [
   './src/db.js',
   './src/entries.js',
   './src/collections.js',
+  './src/wishlist.js',
   './src/share.js',
   './src/search.js',
   './src/ocr.js',
@@ -25,6 +26,7 @@ const APP_SHELL = [
   './src/ui/capture.js',
   './src/ui/feed.js',
   './src/ui/collection.js',
+  './src/ui/wishlist.js',
   './src/ui/retro.js',
   './src/ui/dashboard.js',
   './src/ui/settings.js',

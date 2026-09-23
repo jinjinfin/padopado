@@ -26,6 +26,19 @@ export const ENTRY_TYPES = [
   { id: 'music', label: '음악', emoji: '🎵', hint: '요즘 듣는 노래·앨범' },
 ];
 
+// 위시리스트: "아직 안 본/안 읽은/안 들은" 것들을 미리 담아두는 목록.
+// 컬렉션과 달리 실제 기록(글)과는 연결되지 않고, 제목과 (선택) 아티스트만
+// 가진 독립적인 항목입니다. 장소는 아티스트 칸에 건축가·디자이너를 적어도 됩니다.
+export const WISHLIST_TYPES = [
+  { id: 'book', label: '책', emoji: '📖' },
+  { id: 'movie', label: '영화', emoji: '🎬' },
+  { id: 'drama', label: '드라마', emoji: '📺' },
+  { id: 'video', label: '영상', emoji: '🎥' },
+  { id: 'music', label: '음악', emoji: '🎵' },
+  { id: 'writing', label: '글', emoji: '✍️' },
+  { id: 'place', label: '장소', emoji: '📍' },
+];
+
 export const RETRO_PERIODS = [
   { id: 'week', label: '주간 회고' },
   { id: 'month', label: '월간 회고' },
@@ -51,6 +64,7 @@ export const DATA_PATHS = {
   entriesDir: 'data/entries',
   entryYearFile: (year) => `data/entries/${year}.json`,
   collections: 'data/collections.json',
+  wishlist: 'data/wishlist.json',
   pushSubs: 'data/meta/push-subscriptions.json',
   stats: 'data/meta/stats-cache.json',
 };

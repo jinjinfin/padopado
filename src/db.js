@@ -2,7 +2,7 @@
 import { openDB } from './vendor/idb.min.js';
 
 const DB_NAME = 'jot-db';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 
 let dbPromise;
 
@@ -19,6 +19,9 @@ function getDB() {
         }
         if (!db.objectStoreNames.contains('collections')) {
           db.createObjectStore('collections', { keyPath: 'id' });
+        }
+        if (!db.objectStoreNames.contains('wishlist')) {
+          db.createObjectStore('wishlist', { keyPath: 'id' });
         }
         if (!db.objectStoreNames.contains('kv')) {
           db.createObjectStore('kv');
@@ -79,6 +82,29 @@ export async function getAllCollectionItems() {
 export async function deleteCollectionItemLocal(id) {
   const db = await getDB();
   await db.delete('collections', id);
+}
+
+export async function putWishlistItem(item) {
+  const db = await getDB();
+  await db.put('wishlist', item);
+  return item;
+}
+
+export async function putWishlistItems(items) {
+  const db = await getDB();
+  const tx = db.transaction('wishlist', 'readwrite');
+  await Promise.all(items.map((it) => tx.store.put(it)));
+  await tx.done;
+}
+
+export async function getAllWishlistItems() {
+  const db = await getDB();
+  return db.getAll('wishlist');
+}
+
+export async function deleteWishlistItemLocal(id) {
+  const db = await getDB();
+  await db.delete('wishlist', id);
 }
 
 export async function kvGet(key) {

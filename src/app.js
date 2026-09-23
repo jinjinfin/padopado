@@ -1,9 +1,11 @@
 // 앱 진입점: 라우팅, 탭바, 플로팅 기록 버튼을 구성합니다.
 import * as entries from './entries.js';
 import * as collections from './collections.js';
+import * as wishlist from './wishlist.js';
 import * as gh from './github.js';
 import * as feed from './ui/feed.js';
 import * as collectionUi from './ui/collection.js';
+import * as wishlistUi from './ui/wishlist.js';
 import * as retroUi from './ui/retro.js';
 import * as dashboardUi from './ui/dashboard.js';
 import * as settingsUi from './ui/settings.js';
@@ -19,6 +21,7 @@ const ROUTES = {
   '#/home': { render: homeUi.render, hidden: true },
   '#/': { render: feed.render, label: '영감', icon: '✨' },
   '#/collection': { render: collectionUi.render, label: '컬렉션', icon: '🗃️' },
+  '#/wishlist': { render: wishlistUi.render, label: '위시리스트', icon: '⭐' },
   '#/retro': { render: retroUi.render, label: '회고', icon: '🪞' },
   '#/dashboard': { render: dashboardUi.render, label: '대시보드', icon: '📊' },
   '#/settings': { render: settingsUi.render, label: '설정', icon: '⚙️' },
@@ -119,7 +122,7 @@ async function autoRefreshFromRemote() {
   if (now - lastAutoRefresh < AUTO_REFRESH_MIN_INTERVAL_MS) return;
   lastAutoRefresh = now;
   try {
-    await Promise.all([entries.refreshFromRemote(), collections.refreshFromRemote()]);
+    await Promise.all([entries.refreshFromRemote(), collections.refreshFromRemote(), wishlist.refreshFromRemote()]);
   } catch (e) {
     console.warn('화면 복귀 시 원격 동기화 실패(오프라인일 수 있음):', e.message);
   }
@@ -161,7 +164,7 @@ async function boot() {
   if (!isConfigured()) {
     location.hash = '#/settings';
   }
-  await Promise.all([entries.init(), collections.init()]);
+  await Promise.all([entries.init(), collections.init(), wishlist.init()]);
   await refreshWriteAccess();
   try {
     await collections.pruneEmptyItems(entries.getEntries());
