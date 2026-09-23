@@ -18,16 +18,16 @@ export const LS_KEYS = {
 // 시작하는 전용 흐름(기간별 질문 템플릿 + 그 기간 기록을 재료로 보여주기)이기 때문입니다.
 export const ENTRY_TYPES = [
   { id: 'quote', label: '책/글', emoji: '📖', hint: '책·아티클에서 인상 깊었던 문장' },
-  { id: 'insight', label: '인사이트', emoji: '💡', hint: '강연·회의에서 배운 것' },
-  { id: 'link', label: '링크', emoji: '🔗', hint: '웹페이지 링크와 간단한 설명' },
-  { id: 'thought', label: '생각', emoji: '✍️', hint: '지금 떠오른 내 생각' },
+  { id: 'copy', label: '카피', emoji: '📢', hint: '광고·제목 등에 쓰인 인상적인 카피' },
   { id: 'media', label: '영화/드라마', emoji: '🎬', hint: '영화·드라마·유튜브' },
-  { id: 'word', label: '단어', emoji: '🔤', hint: '새로 알게 된 단어와 뜻' },
   { id: 'music', label: '음악', emoji: '🎵', hint: '요즘 듣는 노래·앨범' },
   { id: 'exhibition', label: '전시', emoji: '🖼️', hint: '전시·미술관에서 본 것' },
   { id: 'performance', label: '공연', emoji: '🎭', hint: '공연·연극·콘서트' },
-  { id: 'copy', label: '카피', emoji: '📢', hint: '광고·제목 등에 쓰인 인상적인 카피' },
   { id: 'knowledge', label: '지식', emoji: '🧠', hint: '새로 알게 된 지식·정보' },
+  { id: 'insight', label: '인사이트', emoji: '💡', hint: '강연·회의에서 배운 것' },
+  { id: 'word', label: '단어', emoji: '🔤', hint: '새로 알게 된 단어와 뜻' },
+  { id: 'thought', label: '생각', emoji: '✍️', hint: '지금 떠오른 내 생각' },
+  { id: 'link', label: '링크', emoji: '🔗', hint: '웹페이지 링크와 간단한 설명' },
 ];
 
 // 위시리스트: "아직 안 본/안 읽은/안 들은" 것들을 미리 담아두는 목록.
@@ -35,14 +35,14 @@ export const ENTRY_TYPES = [
 // 가진 독립적인 항목입니다. 장소는 아티스트 칸에 건축가·디자이너를 적어도 됩니다.
 export const WISHLIST_TYPES = [
   { id: 'book', label: '책', emoji: '📖', doneLabel: '다 읽었어요' },
+  { id: 'writing', label: '글', emoji: '✍️', doneLabel: '다 읽었어요' },
   { id: 'movie', label: '영화', emoji: '🎬', doneLabel: '다 봤어요' },
   { id: 'drama', label: '드라마', emoji: '📺', doneLabel: '다 봤어요' },
   { id: 'video', label: '영상', emoji: '🎥', doneLabel: '다 봤어요' },
   { id: 'music', label: '음악', emoji: '🎵', doneLabel: '다 들었어요' },
-  { id: 'writing', label: '글', emoji: '✍️', doneLabel: '다 읽었어요' },
-  { id: 'place', label: '장소', emoji: '📍', doneLabel: '다녀왔어요' },
   { id: 'exhibition', label: '전시', emoji: '🖼️', doneLabel: '다녀왔어요' },
   { id: 'performance', label: '공연', emoji: '🎭', doneLabel: '다녀왔어요' },
+  { id: 'place', label: '장소', emoji: '📍', doneLabel: '다녀왔어요' },
 ];
 
 export const RETRO_PERIODS = [
