@@ -96,6 +96,13 @@
 
 * { box-sizing: border-box; }
 html, body { height: 100%; }
+/* 브라우저는 button/input/select/textarea 같은 폼 요소에는 body의 font-family를
+   기본으로 물려주지 않고, 그 대신 운영체제의 "컨트롤 기본 폰트"를 씁니다. 이
+   기본 폰트가 한글이나 전각 기호(＋ 등) 글자를 온전히 지원하지 못하면, 정작
+   페이지 다른 곳(제목/본문 등)은 멀쩡한데 버튼 안의 글자만(필터 칩, + 버튼 등)
+   안 보이는 문제가 생깁니다. 그래서 폼 요소도 body와 똑같은 글꼴을 쓰도록
+   명시적으로 맞춰줍니다. */
+button, input, select, textarea { font-family: inherit; }
 body {
   margin: 0;
   background: var(--bg);

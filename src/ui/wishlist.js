@@ -27,7 +27,7 @@ export function render(container) {
 function renderList(container) {
   const items = wishlist.getItems();
   const addBtn = canWrite()
-    ? `<button type="button" class="btn secondary" id="wishlist-add-btn">＋ 위시리스트 추가</button>`
+    ? `<button type="button" class="btn secondary" id="wishlist-add-btn">+ 위시리스트 추가</button>`
     : '';
 
   container.innerHTML = `
@@ -108,7 +108,7 @@ function renderGrid(container, items) {
 
   const archiveToggleEl = container.querySelector('#wishlist-archive-toggle');
   if (archiveToggleEl) {
-    archiveToggleEl.textContent = `🗄 다녀온 기록 ${showArchive ? '접기' : '보기'} (${archived.length}개)`;
+    archiveToggleEl.textContent = `🗄 아카이브 ${showArchive ? '접기' : '보기'} (${archived.length}개)`;
     archiveToggleEl.addEventListener('click', () => {
       showArchive = !showArchive;
       renderGrid(container, items);

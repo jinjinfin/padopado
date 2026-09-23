@@ -88,7 +88,7 @@ function renderShell() {
       <span id="offline-badge" class="offline-badge" style="display:none">오프라인</span>
     </header>
     <main id="view-root"></main>
-    <button type="button" id="fab" aria-label="새 기록">＋</button>
+    <button type="button" id="fab" aria-label="새 기록">+</button>
     <nav id="tabbar"></nav>
   `;
   document.getElementById('fab').addEventListener('click', () => openCapture({ onSaved: () => {} }));

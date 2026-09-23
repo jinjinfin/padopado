@@ -3,6 +3,7 @@
 import * as db from './db.js';
 import * as gh from './github.js';
 import * as collections from './collections.js';
+import * as wishlist from './wishlist.js';
 import { DATA_PATHS, isConfigured } from './config.js';
 
 let memoryEntries = []; // 최신순 정렬 캐시
@@ -95,6 +96,17 @@ export async function addEntry(fields) {
   memoryEntries = sortDesc([entry, ...memoryEntries]);
   notify();
   queueSync();
+
+  // 위시리스트에서 "다녀왔어요/봤어요"로 체크해둔(아카이브에 있는) 항목과 같은
+  // 제목으로 영감 탭에 새 기록을 남기면, 이제 그 위시리스트 항목은 지워도 됩니다.
+  if (entry.source) {
+    try {
+      await wishlist.deleteVisitedItemsByTitle(entry.source);
+    } catch (e) {
+      console.warn('위시리스트 항목 정리 실패:', e.message);
+    }
+  }
+
   return entry;
 }
 

@@ -17,11 +17,11 @@ export const LS_KEYS = {
 // '회고'는 여기 없습니다 — 일반 작성 모달의 유형 선택지가 아니라, 회고 탭에서만
 // 시작하는 전용 흐름(기간별 질문 템플릿 + 그 기간 기록을 재료로 보여주기)이기 때문입니다.
 export const ENTRY_TYPES = [
-  { id: 'quote', label: '글귀', emoji: '📖', hint: '책·아티클에서 인상 깊었던 문장' },
+  { id: 'quote', label: '책/글', emoji: '📖', hint: '책·아티클에서 인상 깊었던 문장' },
   { id: 'insight', label: '인사이트', emoji: '💡', hint: '강연·회의에서 배운 것' },
   { id: 'link', label: '링크', emoji: '🔗', hint: '웹페이지 링크와 간단한 설명' },
   { id: 'thought', label: '생각', emoji: '✍️', hint: '지금 떠오른 내 생각' },
-  { id: 'media', label: '영상/작품', emoji: '🎬', hint: '영화·드라마·유튜브' },
+  { id: 'media', label: '영화/드라마', emoji: '🎬', hint: '영화·드라마·유튜브' },
   { id: 'word', label: '단어', emoji: '🔤', hint: '새로 알게 된 단어와 뜻' },
   { id: 'music', label: '음악', emoji: '🎵', hint: '요즘 듣는 노래·앨범' },
 ];

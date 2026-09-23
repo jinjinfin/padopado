@@ -83,6 +83,20 @@ export async function setVisited(id, visited) {
   return updated;
 }
 
+// 체크(다녀왔어요/봤어요)해둔 항목과 같은 제목으로 영감 탭에 새 기록이 등록되면,
+// 그 항목은 이제 할 일을 다 했으니(체크 + 기록까지 남김) 아카이브에서도 지웁니다.
+// entries.js의 addEntry()가 새 기록을 저장한 뒤 이 함수를 호출합니다.
+export async function deleteVisitedItemsByTitle(title) {
+  const norm = (s) => (s || '').trim().toLowerCase();
+  const key = norm(title);
+  if (!key) return 0;
+  const matches = memoryItems.filter((it) => it.visited && norm(it.title) === key);
+  for (const it of matches) {
+    await deleteItem(it.id);
+  }
+  return matches.length;
+}
+
 export async function deleteItem(id) {
   memoryItems = memoryItems.filter((it) => it.id !== id);
   await db.deleteWishlistItemLocal(id);
