@@ -3,7 +3,7 @@
 // 같은 제목끼리 자동으로 모여 하나의 아카이브가 됩니다.
 import * as db from './db.js';
 import * as gh from './github.js';
-import { DATA_PATHS, isConfigured } from './config.js';
+import { DATA_PATHS, isConfigured, canWrite } from './config.js';
 
 let memoryItems = [];
 let listeners = new Set();
@@ -105,6 +105,22 @@ export async function deleteItem(id) {
   if (!pendingDeletes.includes(id)) pendingDeletes.push(id);
   await db.kvSet('pendingCollectionDeletes', pendingDeletes);
   await pushRemote();
+}
+
+// 앱을 켤 때 한 번, "지금 연결된 글이 하나도 없는" 컬렉션 항목을 모두 정리합니다.
+// deleteItem()의 자동 정리는 "지금 막 마지막 글을 지운" 경우만 잡아내므로,
+// 이 기능이 생기기 전부터 이미 비어있던 항목이나 다른 경로로 비게 된 항목은
+// 여기서 한 번 훑어서 마저 지워줍니다. 읽기 전용 연결에서는 건드리지 않습니다.
+export async function pruneEmptyItems(allEntries) {
+  if (!canWrite()) return 0;
+  const linkedIds = new Set(
+    (allEntries || []).filter((e) => e.collectionId).map((e) => e.collectionId)
+  );
+  const empty = memoryItems.filter((it) => !linkedIds.has(it.id));
+  for (const it of empty) {
+    await deleteItem(it.id);
+  }
+  return empty.length;
 }
 
 async function pushRemote() {

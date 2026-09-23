@@ -163,6 +163,11 @@ async function boot() {
   }
   await Promise.all([entries.init(), collections.init()]);
   await refreshWriteAccess();
+  try {
+    await collections.pruneEmptyItems(entries.getEntries());
+  } catch (e) {
+    console.warn('컬렉션 정리 실패:', e.message);
+  }
   renderRoute();
 
   if ('serviceWorker' in navigator) {
