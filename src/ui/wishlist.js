@@ -10,8 +10,10 @@ const TYPE_MAP = new Map(WISHLIST_TYPES.map((t) => [t.id, t]));
 
 let unsub = null;
 let modalEl = null;
+let activeTypeFilter = null;
 
 export function render(container) {
+  activeTypeFilter = null;
   renderList(container);
   unsub = wishlist.onChange(() => renderList(container));
   return () => {
@@ -29,20 +31,59 @@ function renderList(container) {
   container.innerHTML = `
     <div class="view book-view">
       <h1 class="view-title">⭐ 위시리스트</h1>
-      <p class="view-subtitle">나중에 보고 싶은 책·영화·드라마·영상·음악·글·장소를 미리 담아두세요.</p>
+      <p class="view-subtitle">나중에 보고 싶은 책·영화·드라마·영상·음악·글·장소·전시를 미리 담아두세요.</p>
       ${addBtn}
-      ${
-        items.length === 0
-          ? `<div class="empty-state">아직 담아둔 항목이 없어요.${canWrite() ? ' 위의 버튼으로 추가해보세요.' : ''}</div>`
-          : `<div class="book-grid">${items.map(itemCardHtml).join('')}</div>`
-      }
+      ${items.length === 0 ? '' : `<div class="chip-row" id="wishlist-type-filters"></div>`}
+      <div id="wishlist-grid"></div>
     </div>
   `;
 
   const addBtnEl = container.querySelector('#wishlist-add-btn');
   if (addBtnEl) addBtnEl.addEventListener('click', () => openAddModal());
 
-  container.querySelectorAll('.wishlist-delete').forEach((btn) => {
+  // "전체" 칩이 기본값이자 항상 첫 번째. 유형 칩은 라디오처럼 한 번에 하나만
+  // 선택되어, 지금 어떤 유형만 골라 보고 있는지 항상 분명합니다(영감 피드의
+  // 유형 필터와 같은 방식).
+  const filterRow = container.querySelector('#wishlist-type-filters');
+  if (filterRow) {
+    filterRow.innerHTML = [
+      `<button type="button" class="chip small" data-type="">전체</button>`,
+      ...WISHLIST_TYPES.map(
+        (t) => `<button type="button" class="chip small" data-type="${t.id}">${t.emoji} ${t.label}</button>`
+      ),
+    ].join('');
+    const syncFilterChips = () => {
+      filterRow.querySelectorAll('.chip').forEach((c) => c.classList.toggle('active', c.dataset.type === (activeTypeFilter || '')));
+    };
+    syncFilterChips();
+    filterRow.addEventListener('click', (e) => {
+      const btn = e.target.closest('.chip');
+      if (!btn) return;
+      activeTypeFilter = btn.dataset.type || null;
+      syncFilterChips();
+      renderGrid(container, items);
+    });
+  }
+
+  renderGrid(container, items);
+}
+
+function renderGrid(container, items) {
+  const gridEl = container.querySelector('#wishlist-grid');
+  if (!gridEl) return;
+  const list = activeTypeFilter ? items.filter((it) => it.type === activeTypeFilter) : items;
+
+  if (items.length === 0) {
+    gridEl.innerHTML = `<div class="empty-state">아직 담아둔 항목이 없어요.${canWrite() ? ' 위의 버튼으로 추가해보세요.' : ''}</div>`;
+    return;
+  }
+  if (list.length === 0) {
+    gridEl.innerHTML = `<div class="empty-state">이 유형으로 담아둔 항목이 없어요.</div>`;
+    return;
+  }
+  gridEl.innerHTML = `<div class="book-grid">${list.map(itemCardHtml).join('')}</div>`;
+
+  gridEl.querySelectorAll('.wishlist-delete').forEach((btn) => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       if (!window.confirm('이 항목을 위시리스트에서 지울까요?')) return;

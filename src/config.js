@@ -37,6 +37,7 @@ export const WISHLIST_TYPES = [
   { id: 'music', label: '음악', emoji: '🎵' },
   { id: 'writing', label: '글', emoji: '✍️' },
   { id: 'place', label: '장소', emoji: '📍' },
+  { id: 'exhibition', label: '전시', emoji: '🖼️' },
 ];
 
 export const RETRO_PERIODS = [
