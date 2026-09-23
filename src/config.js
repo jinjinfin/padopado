@@ -24,6 +24,8 @@ export const ENTRY_TYPES = [
   { id: 'media', label: '영화/드라마', emoji: '🎬', hint: '영화·드라마·유튜브' },
   { id: 'word', label: '단어', emoji: '🔤', hint: '새로 알게 된 단어와 뜻' },
   { id: 'music', label: '음악', emoji: '🎵', hint: '요즘 듣는 노래·앨범' },
+  { id: 'exhibition', label: '전시', emoji: '🖼️', hint: '전시·미술관에서 본 것' },
+  { id: 'performance', label: '공연', emoji: '🎭', hint: '공연·연극·콘서트' },
 ];
 
 // 위시리스트: "아직 안 본/안 읽은/안 들은" 것들을 미리 담아두는 목록.
@@ -38,6 +40,7 @@ export const WISHLIST_TYPES = [
   { id: 'writing', label: '글', emoji: '✍️', doneLabel: '다 읽었어요' },
   { id: 'place', label: '장소', emoji: '📍', doneLabel: '다녀왔어요' },
   { id: 'exhibition', label: '전시', emoji: '🖼️', doneLabel: '다녀왔어요' },
+  { id: 'performance', label: '공연', emoji: '🎭', doneLabel: '다녀왔어요' },
 ];
 
 export const RETRO_PERIODS = [
