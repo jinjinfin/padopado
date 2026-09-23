@@ -171,6 +171,11 @@ body {
 .home-wishlist-emoji { font-size: 26px; margin-bottom: 6px; }
 .home-wishlist-title { font-weight: 700; font-size: 14px; }
 .home-wishlist-artist { font-size: 12px; color: var(--text-dim); }
+.home-collection-pick { max-width: 480px; margin: 0 auto 24px; }
+.home-collection-card { position: relative; }
+.home-collection-emoji { font-size: 26px; margin-bottom: 6px; }
+.home-collection-title { font-weight: 700; font-size: 14px; }
+.home-collection-author { font-size: 12px; color: var(--text-dim); }
 
 #tabbar {
   position: fixed; bottom: 0; left: 0; right: 0;
