@@ -1,6 +1,7 @@
-// 메인 화면: 헤더 로고를 누르면 오는 첫 화면. 인사 메시지("오늘도 파도가
-// 밀려와요" + "파도에 올라타 보세요")와 함께, 예전에 쓴 기록 중 하나와
-// 위시리스트 중 하나를 각각 무작위로 다시 보여줍니다.
+// 메인 화면: 헤더 로고를 누르면 오는 첫 화면. 맨 위엔 인사 메시지("오늘도
+// 파도가 밀려와요")와 예전에 쓴 기록 중 하나를 무작위로 보여주고, 맨 아래엔
+// 같은 배열(이모지 위 + 문구 아래, 같은 글꼴)로 "파도에 올라타 보세요"와
+// 위시리스트 중 하나를 무작위로 다시 보여줍니다.
 // 탭바에는 나타나지 않는 숨은 화면이라, 로고를 누르는 것이 유일한 진입 경로입니다.
 import * as entries from '../entries.js';
 import * as collections from '../collections.js';
@@ -21,10 +22,12 @@ export function render(container) {
       <div class="home-hero">
         <div class="home-wave" aria-hidden="true">🌊</div>
         <p class="home-message">오늘도 파도가 밀려와요</p>
-        <p class="home-surf-message">🏄 파도에 올라타 보세요</p>
       </div>
       <div id="home-pick" class="home-pick"></div>
-      <h2 class="section-title">🎲 위시리스트에서</h2>
+      <div class="home-hero">
+        <div class="home-wave" aria-hidden="true">🏄</div>
+        <p class="home-message">파도에 올라타 보세요</p>
+      </div>
       <div id="home-wishlist-pick" class="home-wishlist-pick"></div>
     </div>
   `;
