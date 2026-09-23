@@ -8,13 +8,20 @@ import * as collections from '../collections.js';
 import * as wishlist from '../wishlist.js';
 import * as stats from '../stats.js';
 import { WISHLIST_TYPES } from '../config.js';
-import { entryCard, wireEntryDelete, wireEntryEdit, wireContentToggle, applyContentClamp, wireLinkToggle, escapeHtml } from './shared.js';
+import { entryCard, wireEntryDelete, wireEntryEdit, wireContentToggle, applyContentClamp, wireLinkToggle, wireCommentToggle, wireCommentActions, escapeHtml } from './shared.js';
 import { openCapture } from './capture.js';
 
 const WISHLIST_TYPE_MAP = new Map(WISHLIST_TYPES.map((t) => [t.id, t]));
 
 let unsubEntries = null;
 let unsubWishlist = null;
+// 홈 화면을 보고 있는 동안 뽑힌 기록 하나를 고정해둡니다. 댓글을 남기는 등
+// entries.onChange가 발생할 때마다 다른 기록으로 다시 뽑히면(원래
+// pickResurfacedEntries는 호출할 때마다 무작위라서) 방금 단 댓글이 화면에서
+// 사라진 것처럼 보이니, 같은 화면에 머무는 동안은 같은 기록을 계속 보여주고
+// 그 안의 최신 내용(댓글 등)만 다시 그립니다. 홈에 새로 들어올 때(render())만
+// 초기화해서 다시 무작위로 뽑히게 합니다.
+let pickedEntryId = null;
 
 export function render(container) {
   container.innerHTML = `
@@ -32,6 +39,8 @@ export function render(container) {
     </div>
   `;
 
+  pickedEntryId = null;
+
   const pickEl = container.querySelector('#home-pick');
   wireEntryDelete(pickEl, entries);
   wireEntryEdit(pickEl, (id) => {
@@ -41,6 +50,8 @@ export function render(container) {
   });
   wireContentToggle(pickEl);
   wireLinkToggle(pickEl);
+  wireCommentToggle(pickEl);
+  wireCommentActions(pickEl, entries);
 
   paint(container);
   unsubEntries = entries.onChange(() => paint(container));
@@ -55,7 +66,11 @@ function paint(container) {
   const pickEl = container.querySelector('#home-pick');
   if (pickEl) {
     const list = entries.getEntries();
-    const [picked] = stats.pickResurfacedEntries(list, 1);
+    let picked = pickedEntryId ? list.find((e) => e.id === pickedEntryId) : null;
+    if (!picked) {
+      [picked] = stats.pickResurfacedEntries(list, 1);
+      pickedEntryId = picked ? picked.id : null;
+    }
     if (!picked) {
       pickEl.innerHTML = '<div class="empty-state">아직 기록이 없어요. 첫 기록을 남기면 다음에 여기서 다시 만날 수 있어요.</div>';
     } else {

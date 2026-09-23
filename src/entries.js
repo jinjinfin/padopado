@@ -110,6 +110,28 @@ export async function addEntry(fields) {
   return entry;
 }
 
+// 댓글: 그 기록을 보다가 떠오른 생각을 짧게 덧붙여두는 용도입니다. 별도
+// 데이터 파일 없이 entry 안에 comments 배열로 같이 저장되고(그래서 기존
+// GitHub 동기화 로직을 그대로 재사용), updateEntry()를 거치므로 저장/동기화
+// 흐름은 일반 기록 수정과 동일합니다.
+export async function addComment(entryId, text) {
+  const trimmed = (text || '').trim();
+  if (!trimmed) return null;
+  const entry = memoryEntries.find((e) => e.id === entryId);
+  if (!entry) return null;
+  const comment = { id: uuid(), text: trimmed, createdAt: new Date().toISOString() };
+  const comments = [...(entry.comments || []), comment];
+  await updateEntry(entryId, { comments });
+  return comment;
+}
+
+export async function deleteComment(entryId, commentId) {
+  const entry = memoryEntries.find((e) => e.id === entryId);
+  if (!entry) return;
+  const comments = (entry.comments || []).filter((c) => c.id !== commentId);
+  await updateEntry(entryId, { comments });
+}
+
 export async function updateEntry(id, patch) {
   const idx = memoryEntries.findIndex((e) => e.id === id);
   if (idx === -1) return null;

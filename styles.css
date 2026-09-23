@@ -268,6 +268,36 @@ textarea { resize: vertical; }
 .entry-edit:hover, .entry-edit:active { color: var(--accent); background: var(--accent-soft); }
 .entry-delete:hover, .entry-delete:active { color: var(--danger); background: var(--accent-soft); }
 
+/* 기록에서 파생된 생각을 짧게 남기는 댓글 섹션 */
+.comment-block { margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--border); }
+.comment-toggle {
+  display: block; background: none; border: none; padding: 2px 0; margin: 0;
+  font-size: 12.5px; font-weight: 600; color: var(--text-dim); cursor: pointer;
+}
+.comment-toggle:hover { color: var(--accent); }
+.comment-section { margin-top: 8px; }
+.comment-section.comment-hidden { display: none; }
+.comment-list { list-style: none; margin: 0 0 8px; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.comment-item { background: var(--accent-soft); border-radius: 10px; padding: 8px 10px; }
+.comment-text { margin: 0; font-size: 13.5px; line-height: 1.5; white-space: pre-wrap; }
+.comment-item-meta { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
+.comment-time { font-size: 11px; color: var(--text-dim); }
+.comment-delete {
+  background: none; border: none; padding: 2px 4px; margin: -2px -4px;
+  font-size: 12px; line-height: 1; color: var(--text-dim); cursor: pointer; border-radius: 6px;
+}
+.comment-delete:hover, .comment-delete:active { color: var(--danger); }
+.comment-form { display: flex; gap: 6px; align-items: center; }
+.comment-form .comment-input {
+  flex: 1; width: auto; margin: 0; padding: 8px 12px; font-size: 13.5px;
+  border-radius: var(--radius); border: 1px solid var(--border);
+  background: var(--surface); color: var(--text); font-family: inherit;
+}
+.comment-submit {
+  border: none; border-radius: var(--radius); padding: 8px 14px; font-size: 13px; font-weight: 600;
+  background: var(--accent); color: #fff; cursor: pointer; white-space: nowrap;
+}
+
 .empty-state { color: var(--text-dim); text-align: center; padding: 40px 16px; font-size: 14px; }
 
 /* 캡처 모달 */

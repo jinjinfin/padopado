@@ -7,7 +7,7 @@ import * as collections from '../collections.js';
 import * as search from '../search.js';
 import { ENTRY_TYPES } from '../config.js';
 import { openCapture } from './capture.js';
-import { entryCard, wireEntryDelete, wireEntryEdit, wireContentToggle, applyContentClamp, wireLinkToggle } from './shared.js';
+import { entryCard, wireEntryDelete, wireEntryEdit, wireContentToggle, applyContentClamp, wireLinkToggle, wireCommentToggle, wireCommentActions } from './shared.js';
 
 const FEED_TYPES = ENTRY_TYPES.filter((t) => t.id !== 'retro');
 
@@ -87,6 +87,8 @@ export function render(container) {
   });
   wireContentToggle(container.querySelector('#feed-list'));
   wireLinkToggle(container.querySelector('#feed-list'));
+  wireCommentToggle(container.querySelector('#feed-list'));
+  wireCommentActions(container.querySelector('#feed-list'), entries);
 
   rebuildSearchIndex();
   rerenderList(container);

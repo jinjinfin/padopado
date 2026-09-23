@@ -3,6 +3,12 @@ import { ENTRY_TYPES, canWrite } from '../config.js';
 
 const TYPE_MAP = new Map(ENTRY_TYPES.map((t) => [t.id, t]));
 
+// 댓글 섹션이 펼쳐져 있는 기록 id들. 목록이 통째로 다시 그려질 때마다(데이터
+// 변경, 댓글 등록 직후 등) 매번 접혀버리면 "댓글을 남겼는데 바로 사라진 것
+// 같은" 느낌을 주므로, 세션 동안 펼침 상태를 여기 따로 기억해뒀다가
+// commentSectionHtml()이 다시 그릴 때 그대로 반영합니다.
+const openComments = new Set();
+
 export function escapeHtml(s) {
   return String(s || '')
     .replace(/&/g, '&amp;')
@@ -70,8 +76,91 @@ export function entryCard(entry, collectionsById = new Map()) {
       ${contentBlockHtml(entry.content)}
       ${linkBlock}
       ${tags ? `<div class="entry-tags">${tags}</div>` : ''}
+      ${commentSectionHtml(entry)}
     </article>
   `;
+}
+
+// 각 기록에서 파생된 생각을 짧게 덧붙일 수 있는 댓글 섹션. 기록 자체를 수정하는
+// 것과 달리, 원래 내용은 그대로 둔 채 "이 글을 보고 떠오른 것"만 따로 쌓아갑니다.
+export function commentSectionHtml(entry) {
+  const comments = entry.comments || [];
+  const isOpen = openComments.has(entry.id);
+  const listHtml = comments
+    .map(
+      (c) => `
+        <li class="comment-item" data-comment-id="${c.id}">
+          <p class="comment-text">${escapeHtml(c.text).replace(/\n/g, '<br/>')}</p>
+          <span class="comment-item-meta">
+            <span class="comment-time">${timeAgo(c.createdAt)}</span>
+            <button type="button" class="comment-delete" data-comment-id="${c.id}" aria-label="댓글 삭제">✕</button>
+          </span>
+        </li>`
+    )
+    .join('');
+
+  return `
+    <div class="comment-block" data-entry-id="${entry.id}">
+      <button type="button" class="comment-toggle">💬 댓글${comments.length > 0 ? ` ${comments.length}` : ''}</button>
+      <div class="comment-section${isOpen ? '' : ' comment-hidden'}">
+        ${comments.length > 0 ? `<ul class="comment-list">${listHtml}</ul>` : ''}
+        <form class="comment-form">
+          <input type="text" class="comment-input" placeholder="이 글에서 떠오른 생각을 남겨보세요" maxlength="500" />
+          <button type="submit" class="comment-submit">등록</button>
+        </form>
+      </div>
+    </div>
+  `;
+}
+
+// .comment-toggle 클릭으로 댓글 섹션을 펼치고/접습니다. 위 openComments
+// 세트에도 반영해서, 이후 목록이 다시 그려져도 펼친 상태가 유지되게 합니다.
+export function wireCommentToggle(container) {
+  container.addEventListener('click', (e) => {
+    const btn = e.target.closest('.comment-toggle');
+    if (!btn) return;
+    const block = btn.closest('.comment-block');
+    if (!block) return;
+    const entryId = block.dataset.entryId;
+    const section = block.querySelector('.comment-section');
+    if (!section) return;
+    const nowOpen = section.classList.toggle('comment-hidden') === false;
+    if (nowOpen) {
+      openComments.add(entryId);
+      const input = section.querySelector('.comment-input');
+      if (input) input.focus();
+    } else {
+      openComments.delete(entryId);
+    }
+  });
+}
+
+// 댓글 등록(form submit)과 삭제(✕ 버튼)를 이벤트 위임으로 처리하는 공용 헬퍼.
+// entryCard()가 쓰이는 화면(영감 피드, 홈)마다 한 번씩 불러주면 됩니다.
+export function wireCommentActions(container, entriesMod) {
+  container.addEventListener('submit', (e) => {
+    const form = e.target.closest('.comment-form');
+    if (!form) return;
+    e.preventDefault();
+    const block = form.closest('.comment-block');
+    if (!block) return;
+    const entryId = block.dataset.entryId;
+    const input = form.querySelector('.comment-input');
+    const text = (input.value || '').trim();
+    if (!text) return;
+    openComments.add(entryId); // 등록 직후 다시 그려져도 열려있게
+    input.value = '';
+    entriesMod.addComment(entryId, text);
+  });
+
+  container.addEventListener('click', (e) => {
+    const btn = e.target.closest('.comment-delete');
+    if (!btn) return;
+    const block = btn.closest('.comment-block');
+    if (!block) return;
+    if (!window.confirm('이 댓글을 지울까요?')) return;
+    entriesMod.deleteComment(block.dataset.entryId, btn.dataset.commentId);
+  });
 }
 
 // 링크는 목록에서 바로 노출하지 않고, "🔗 링크 보기" 버튼을 눌러야 펼쳐지도록
