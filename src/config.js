@@ -26,6 +26,7 @@ export const ENTRY_TYPES = [
   { id: 'music', label: '음악', emoji: '🎵', hint: '요즘 듣는 노래·앨범' },
   { id: 'exhibition', label: '전시', emoji: '🖼️', hint: '전시·미술관에서 본 것' },
   { id: 'performance', label: '공연', emoji: '🎭', hint: '공연·연극·콘서트' },
+  { id: 'copy', label: '카피', emoji: '📢', hint: '광고·제목 등에 쓰인 인상적인 카피' },
 ];
 
 // 위시리스트: "아직 안 본/안 읽은/안 들은" 것들을 미리 담아두는 목록.
